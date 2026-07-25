@@ -27,6 +27,15 @@ Before doing any review work, ask the human once how they want this run handled 
 
 Carry this choice through the rest of the run — don't ask again per finding. In local-only mode, skip Step 4 (issue filing) entirely.
 
+## Step 0.3 — offer to recheck existing issues first (GitHub mode only)
+
+Skip this step entirely in local-only mode — there's no tracker to reconcile against. In GitHub mode, ask the human once: "Want me to recheck the currently open review issues first (the `cr-recheck` prompt), so stale ones don't get treated as still-known before this review starts?"
+
+- If yes: run the `cr-recheck.md` flow now against `all` currently open review issues. This closes stale ones and corrects moved line numbers on ones still confirmed, so the "currently open" set used in Step 2.5 below is accurate rather than stale.
+- If no: skip straight to Step 0.5 and treat whatever's currently open as-is.
+
+This does not change the complexity level chosen in Step 0 — the review itself still runs at that level afterward, unless the human asks for a different level here too.
+
 ## Step 0.5 — static analysis grounding (optional)
 
 If your tool can run shell commands and `semgrep` is installed, run `semgrep --config auto <path>` over the review scope before your own read. Treat its output as leads, not findings — verify each hit against the actual code yourself, since it produces false positives. If not installed, skip this step.
@@ -48,6 +57,10 @@ Also assign a confidence score 1-10; only report findings scoring 8+ (>80% confi
 ## Step 2 — aggregate and dedupe
 
 Merge all findings into one list, sorted by severity descending (🔴 → ⚪). Deduplicate anything flagged more than once. Drop anything you can't verify by rereading the cited file:line. Mark any finding also caught by Semgrep (Step 0.5) as tool-confirmed.
+
+## Step 2.5 — drop findings already tracked as open issues (GitHub mode only)
+
+Skip this step entirely in local-only mode. List currently open review issues (reuse the list from Step 0.3 if you already fetched it there; otherwise `gh issue list --state open --limit 100` or the tracker equivalent). For each finding surviving Step 2, check whether it matches an open issue by file + category + fuzzy description — tolerant of line drift, since the code may have shifted slightly since filing. Drop matches from the main report and replace them with a single "N findings already tracked as open issues (see #12, #17, ...)" line so the report stays focused on what's genuinely new. If a finding shares a location with an open issue but is clearly a distinct problem, don't drop it — report it as new.
 
 ## Step 3 — report
 

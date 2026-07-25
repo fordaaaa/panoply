@@ -26,6 +26,15 @@ Before doing any review work, ask the user once (`AskUserQuestion` if available,
 
 Carry this choice through the rest of the run — don't ask again per finding. In local-only mode, skip Step 4 (issue filing) entirely.
 
+## Step 0.3 — offer to recheck existing issues first (GitHub mode only)
+
+Skip this step entirely in local-only mode — there's no tracker to reconcile against. In GitHub mode, ask the user once: "Want me to run `/cr-recheck` on the currently open review issues first, so stale ones don't get treated as still-known before this review starts?"
+
+- If yes: run the `/cr-recheck` flow now for `all` open items filed by `/cr-run`/`/cr-sec`, using whichever tracker [Tracker selection](#tracker-selection) resolves. This closes stale issues and corrects moved line numbers on ones still confirmed, so the "currently open" set used in Step 2.5 below is accurate rather than stale.
+- If no: skip straight to Step 0.4 and treat whatever's currently open as-is.
+
+This does not change the complexity level chosen in Step 0 — the review itself still runs at that level afterward, unless the user asks for a different level here too.
+
 ## Step 0.4 — load map & learned notes (optional grounding)
 
 Before anything else, cheaply load persistent context so subagents don't re-explore from scratch:
@@ -95,6 +104,10 @@ Once subagents report back:
 7. If a `postgres` MCP server is configured and a finding involves a database query, use it to check the actual schema/column types instead of guessing from the code — this sharpens SQL-injection findings (e.g. confirming a raw string really does reach a query, not just something that looks like one) and helps rule out false positives where an ORM already parameterizes the call.
 
 If a Sentry MCP server is configured (see [Tracker selection](#tracker-selection)), cross-reference each HIGH finding against recent production errors/issues in Sentry before finalizing severity — a finding that's already causing crashes in prod should be called out explicitly as such.
+
+## Step 2.5 — drop findings already tracked as open issues (GitHub mode only)
+
+Skip this step entirely in local-only mode. List currently open review issues (reuse the list from Step 0.3 if you already fetched it there; otherwise `gh issue list --state open --limit 100` or the tracker equivalent). For each finding surviving Step 2, check whether it matches an open issue by file + category + fuzzy description — same tolerant-of-line-drift matching `/cr-baseline` uses, since the code may have shifted slightly since filing. Drop matches from the main report and replace them with a single "N findings already tracked as open issues (see #12, #17, ...)" line so the report stays focused on what's genuinely new. If a finding shares a location with an open issue but is clearly a distinct vulnerability, don't drop it — report it as new. This is independent of (and stacks with) the `/cr-baseline` suppression from Step 0.4 — baseline is for things you've deliberately accepted; this is for things already sitting in the tracker.
 
 ## Step 3 — report to the user
 

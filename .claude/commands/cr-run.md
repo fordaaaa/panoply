@@ -24,6 +24,15 @@ Before doing any review work, ask the user once (`AskUserQuestion` if available,
 
 Carry this choice through the rest of the run — don't ask again per finding. In local-only mode, skip Step 4 (issue filing) entirely.
 
+## Step 0.3 — offer to recheck existing issues first (GitHub mode only)
+
+Skip this step entirely in local-only mode — there's no tracker to reconcile against. In GitHub mode, ask the user once: "Want me to run `/cr-recheck` on the currently open review issues first, so stale ones don't get treated as still-known before this review starts?"
+
+- If yes: run the `/cr-recheck` flow now for `all` open items filed by `/cr-run`/`/cr-sec`, using whichever tracker [Tracker selection](#tracker-selection) resolves. This closes stale issues and corrects moved line numbers on ones still confirmed, so the "currently open" set used in Step 2.5 below is accurate rather than stale.
+- If no: skip straight to Step 0.4 and treat whatever's currently open as-is.
+
+This does not change the complexity level chosen in Step 0 — the review itself still runs at that level afterward, unless the user asks for a different level here too.
+
 ## Step 0.4 — load map & learned notes (optional grounding)
 
 Cheaply load persistent context before spawning subagents so a long run doesn't re-explore from scratch:
@@ -55,6 +64,10 @@ Use the `Agent` tool with `subagent_type: Explore` or `general-purpose` (read-on
 ## Step 2 — aggregate and dedupe
 
 Once subagents report back, merge all findings into one list, sorted by severity descending (🔴 → ⚪). Deduplicate anything two subagents flagged independently. Drop anything you can't personally verify by spot-checking the cited file:line yourself. Mark any finding also flagged by Semgrep (Step 0.5) as tool-confirmed — call this out distinctly in the Step 3 report.
+
+## Step 2.5 — drop findings already tracked as open issues (GitHub mode only)
+
+Skip this step entirely in local-only mode. List currently open review issues (reuse the list from Step 0.3 if you already fetched it there; otherwise `gh issue list --state open --limit 100` or the tracker equivalent). For each finding surviving Step 2, check whether it matches an open issue by file + category + fuzzy description — same tolerant-of-line-drift matching `/cr-baseline` uses, since the code may have shifted slightly since filing. Drop matches from the main report and replace them with a single "N findings already tracked as open issues (see #12, #17, ...)" line so the report stays focused on what's genuinely new. If a finding shares a location with an open issue but is clearly a distinct problem, don't drop it — report it as new. This is independent of (and stacks with) the `/cr-baseline` suppression from Step 0.4 — baseline is for things you've deliberately accepted; this is for things already sitting in the tracker.
 
 ## Step 3 — report to the user
 

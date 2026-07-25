@@ -2,8 +2,8 @@
 
 Slash commands for running parallel, severity-ranked code reviews and turning the results into fixed, PR'd code.
 
-- **Claude Code users:** use `.claude/commands/` — `/cr-run`, `/cr-sec`, `/cr-recheck`, and `/cr-fix` work out of the box with auto-discovery.
-- **Any other tool** (Cursor, Aider, Codex, ChatGPT, etc.): use the plain-text prompts in [`prompts/`](prompts/) — copy-paste `prompts/cr-run.md`, `prompts/cr-sec.md`, `prompts/cr-recheck.md`, or `prompts/cr-fix.md`, filling in the `{{LEVEL}}` / `{{ISSUES}}` placeholder, into your tool of choice. Same logic, no Claude Code-specific syntax.
+- **Claude Code users:** use `.claude/commands/` — `/cr-run`, `/cr-sec`, `/cr-recheck`, `/cr-status`, and `/cr-fix` work out of the box with auto-discovery.
+- **Any other tool** (Cursor, Aider, Codex, ChatGPT, etc.): use the plain-text prompts in [`prompts/`](prompts/) — copy-paste `prompts/cr-run.md`, `prompts/cr-sec.md`, `prompts/cr-recheck.md`, `prompts/cr-status.md`, or `prompts/cr-fix.md`, filling in the `{{LEVEL}}` / `{{ISSUES}}` placeholder, into your tool of choice. Same logic, no Claude Code-specific syntax.
 
 ## Commands
 
@@ -30,6 +30,8 @@ Before reviewing anything, Claude asks you to pick a **trace mode**:
 - **GitHub mode (default)** — after reporting findings, asks whether to file them as GitHub issues via `gh issue create` — never files without confirmation.
 - **Local-only mode** — nothing is filed, committed, or pushed. If you want a finding fixed, Claude edits the file directly and leaves it uncommitted in your working tree for you to review, commit, or discard yourself.
 
+In GitHub mode, it also offers to run `/cr-recheck` on the currently open review issues before it starts, so stale ones (already fixed/refactored away) don't muddy the comparison — then, regardless of whether you say yes, it fetches whatever's currently open and drops any new finding that matches one from the main report (replaced with a "N already tracked, see #12, #17" line), so you only see what's actually new. This runs at the same complexity level chosen above unless you ask for a different one.
+
 **Usage:**
 ```
 /cr-run
@@ -44,7 +46,7 @@ Runs a read-only **security** review using parallel subagents — the security-o
 - `medium` (default) — 3 subagents, split by category group: input validation & injection, auth/crypto/secrets, code execution & data exposure.
 - `high` — 5+ subagents, split by category and by codebase area.
 
-Covers SQL/command/template/NoSQL injection, path traversal, auth bypass, privilege escalation, JWT/session flaws, hardcoded secrets, weak crypto, insecure deserialization, RCE, XSS, and sensitive data exposure — with a curated exclusion list (DoS, outdated deps, theoretical race conditions, etc.) and an 8/10+ confidence bar to keep noise down. Same GitHub-issue-filing flow (and the same local-only trace-mode option) as `/cr-run`, tagged `[security]`.
+Covers SQL/command/template/NoSQL injection, path traversal, auth bypass, privilege escalation, JWT/session flaws, hardcoded secrets, weak crypto, insecure deserialization, RCE, XSS, and sensitive data exposure — with a curated exclusion list (DoS, outdated deps, theoretical race conditions, etc.) and an 8/10+ confidence bar to keep noise down. Same GitHub-issue-filing flow, trace-mode option, and recheck-first/skip-already-tracked behavior as `/cr-run`, tagged `[security]`.
 
 The vulnerability taxonomy, severity/confidence scoring, and exclusion list are adapted from Anthropic's open-source [`claude-code-security-review`](https://github.com/anthropics/claude-code-security-review) GitHub Action (MIT licensed) — full credit to that project for the underlying security review methodology.
 
@@ -69,6 +71,19 @@ Run this before `/cr-fix` on any batch of older issues to avoid wasting tokens r
 ```
 /cr-recheck
 /cr-recheck 42 43
+```
+
+### `/cr-status`
+
+Read-only dashboard summarizing open findings filed by `/cr-run`/`/cr-sec`, across whichever tracker you're using. Doesn't verify or touch anything — it's for deciding what to run next, not for re-diagnosing findings (that's `/cr-recheck`).
+
+Reports: counts by severity split by source (code review vs security review), the oldest 5 open items, and a list of **recheck candidates** — items flagged either because they're over 14 days old or because their referenced file has had commits since filing (a light signal, not a verification). Ends with a ready-to-run suggestion like `/cr-recheck 42 43` for the flagged items.
+
+Useful before deciding whether to spend fix effort on the backlog, run another review pass, or just clean out stale issues first.
+
+**Usage:**
+```
+/cr-status
 ```
 
 ### `/cr-fix <issue-number(s)|all>`
