@@ -1,6 +1,6 @@
 # ai-codereviewer-skill
 
-Slash commands for running parallel, severity-ranked code reviews and turning the results into fixed, PR'd code.
+A small collection of portable AI skills — parallel severity-ranked code review, turning the results into fixed PR'd code, and compiling raw requests into structured prompts.
 
 - **Claude Code users:** use `.claude/commands/` — `/cr-run` and `/cr-fix` work out of the box with auto-discovery.
 - **Any other tool** (Cursor, Aider, Codex, ChatGPT, etc.): use the plain-text prompts in [`prompts/`](prompts/) — copy-paste `prompts/cr-run.md` or `prompts/cr-fix.md`, filling in the `{{LEVEL}}` / `{{ISSUES}}` placeholder, into your tool of choice. Same logic, no Claude Code-specific syntax.
@@ -31,6 +31,16 @@ After reporting findings, Claude asks whether to file them as GitHub issues via 
 ```
 /cr-run
 /cr-run high
+```
+
+### `/prompt [what you want, in plain words]`
+
+Compiles a raw request into a ready-to-run prompt plus a base plan, then hands it back for you to run. Treats your words as **intent** and restructures them — without changing what they mean — against a prompt-quality checklist (role/objective, output contract, success criteria, scope boundaries), then runs a token-discipline pass. The compilation runs in a cheap **Haiku subagent** (it's lightweight rewriting, not worth Sonnet/Opus rates) and keeps main-thread context clean. It does not execute the compiled prompt until you say to.
+
+**Usage:**
+```
+/prompt write a script to rename my photos by date taken
+/prompt
 ```
 
 ### `/cr-fix <issue-number(s)|all>`
