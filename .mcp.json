@@ -16,6 +16,14 @@
       "command": "docker",
       "args": ["run", "-i", "--rm", "ghcr.io/semgrep/mcp", "-t", "stdio"]
     },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "chrome", "--executable-path", "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"]
+    },
+    "playwright-firefox": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest", "--browser", "firefox"]
+    },
     "context7": {
       "type": "http",
       "url": "https://mcp.context7.com/mcp"

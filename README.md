@@ -200,6 +200,7 @@ setup-complete: true
 | **Postgres** | Your app's database | Lets `/cr-sec` check real schema/column types for SQL-injection findings instead of guessing from code | `/cr-sec` only, optional |
 | **Semgrep** | Static analysis (SAST) | Grounds findings in actual rule matches instead of pure LLM pattern-matching — subagents treat hits as leads and verify each one before reporting | `/cr-run` and `/cr-sec`, optional |
 | **gitleaks** (CLI, not MCP) | Secrets scanner | If the `gitleaks` binary is on `PATH`, `/cr-sec` shells out to it to catch hardcoded secrets before the auth/crypto/secrets subagent reads the code | `/cr-sec` only, optional |
+| **Playwright** | Real-browser automation (Microsoft's official MCP, Apache-2.0) | Drives an actual browser — navigate, click, fill forms, read the DOM/console, screenshot — accessibility-tree based, not pixel-guessing. Two entries: `playwright` uses **Brave**, `playwright-firefox` uses **Firefox** | general browser control, optional |
 
 ### Setup
 
@@ -210,7 +211,11 @@ For the common case (GitHub or Linear tracker) you don't need to do anything her
 3. **Postgres** (optional, `/cr-sec`) — needs a connection string in your environment before launching Claude Code: `export DATABASE_URL=postgres://user:pass@host/db` (read-only creds recommended). `.mcp.json` reads it automatically.
 4. **Semgrep** (optional) — local server, no credentials: `.mcp.json` runs it via Docker (`ghcr.io/semgrep/mcp`) on demand, so you just need Docker available.
 5. **gitleaks** — not an MCP server, just a CLI: install it ([github.com/gitleaks/gitleaks](https://github.com/gitleaks/gitleaks)) and make sure it's on `PATH`. `/cr-sec` detects it with a plain `which gitleaks` check and shells out directly.
-6. Restart/reload Claude Code in this repo after changing `.mcp.json` or env vars so it re-reads the server list.
+6. **Playwright** (optional) — real-browser control, **no Google Chrome required**. Two entries ship in `.mcp.json`, each fully independent (keep both, or delete whichever you don't use):
+   - **`playwright`** drives **Brave** directly via `--executable-path` (points at `/Applications/Brave Browser.app/Contents/MacOS/Brave Browser` — adjust for your OS/install). Uses your installed Brave, nothing to download.
+   - **`playwright-firefox`** uses Playwright's own bundled Firefox build (**not** your system Firefox, and not Chrome). One-time: `npx playwright install firefox` to fetch that build.
+   - Needs Node ≥ 18 (`npx`). To point Brave elsewhere or add another Chromium-based browser (Vivaldi, Arc, etc.), just change the `--executable-path` value.
+7. Restart/reload Claude Code in this repo after changing `.mcp.json` or env vars so it re-reads the server list.
 
 ### Also worth adding later
 
