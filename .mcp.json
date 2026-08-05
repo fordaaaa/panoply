@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "telegram-bot-mcp": {
+      "command": "/Users/user/Documents/GitHub/telegram-bot-mcp/target/release/telegram-bot-mcp",
+      "args": ["mcp"]
+    },
     "linear": {
       "type": "http",
       "url": "https://mcp.linear.app/mcp"

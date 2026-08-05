@@ -180,12 +180,14 @@ claude-tele bot running (`/telegram`).
 
 None of this is required to use `/cr-run`, `/cr-sec`, `/cr-recheck`, `/cr-fix` — they all work today with just `gh` (GitHub CLI). Everything below is optional extra plumbing that's already wired into the commands and ready to switch on: a starter config lives at [`.mcp.json`](.mcp.json), and Claude Code reads it automatically when you run commands from this repo.
 
-**First run walks you through it.** The very first time you run `/cr-run` (or `/cr-fix`) in a repo, it does a short plain-language setup — it asks whether you want findings **filed to a tracker**, only the **important ones filed**, or **kept local**, then which **tracker** (GitHub or Linear), and checks that tracker is actually connected (offering to run `gh auth login` or the Linear browser login for you if not). Your answers are saved to `.claude/cr/config.md`, so it never asks again — edit that file or say "reconfigure cr" to change it. You don't need to touch env vars or `.mcp.json` by hand for the common case.
+**First run walks you through it.** The very first time you run `/cr-run` (or `/cr-fix`) in a repo, it does a short plain-language setup — it asks whether you want findings **filed to a tracker**, only the **important ones filed**, or **kept local**, then which **tracker** (GitHub or Linear), and checks that tracker is actually connected (offering to run `gh auth login` or the Linear browser login for you if not). `/cr-fix` also asks, once, how to **close out** a fix — merge the PR and close the issues automatically, or open the PR and stop for you. Your answers are saved to `.claude/cr/config.md`, so it never asks again — edit that file or say "reconfigure cr" to change it. You don't need to touch env vars or `.mcp.json` by hand for the common case.
 
 ```
 # .claude/cr/config.md
 filing: high-only     # all | high-only | local
 tracker: github       # github | linear
+autoclose: on         # on = auto squash-merge the fix PR (--delete-branch) so the
+                      #      merge commit closes the issues; off = open PR, stop for review
 setup-complete: true
 ```
 
