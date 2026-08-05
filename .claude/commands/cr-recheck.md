@@ -41,6 +41,6 @@ Give the user a summary table: issue number, verdict (confirmed/stale/needs-huma
 Before doing anything, check `ToolSearch` (query `"mcp__linear"`) for a configured Linear MCP server:
 
 - **If Linear MCP tools are available**, use them (`list_issues`, `get_issue`, `create_comment`, `update_issue`) instead of `gh issue`.
-- **Otherwise**, use the `github` MCP server's tools if configured, or plain `gh issue` (GitHub CLI) if not — either way, GitHub issues as before.
+- **Otherwise**, use plain `gh issue` (GitHub CLI) — GitHub issues as before.
 
 See the root [README](../../README.md#mcp-integrations) for how to configure the Linear MCP server.

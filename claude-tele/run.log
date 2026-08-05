@@ -1,0 +1,11 @@
+2026-08-04 14:24:01,908 INFO     claude-tele: Starting long-polling (no webhook / public URL needed).
+2026-08-04 14:24:02,314 INFO     claude-tele: caffeinate started (pid 61046) — Mac will stay awake while the bot runs.
+2026-08-04 14:24:02,315 INFO     claude-tele: claude-tele ready. workspace_root=/Users/user/Documents/GitHub/ai-skill allowed_ids=[8400715134] shell_enabled=False
+2026-08-04 14:24:02,315 INFO     claude-tele.media: outbox watcher started: /Users/user/Documents/GitHub/ai-skill/claude-tele/outbox (every 2.0s)
+2026-08-04 14:24:02,444 INFO     telegram.ext.Application: Application started
+2026-08-04 14:24:03,114 INFO     claude-tele: claude prompt (8400715134): hi
+2026-08-04 14:24:08,499 INFO     claude-tele: claude prompt (8400715134): hello
+2026-08-04 14:26:33,677 INFO     claude-tele: claude prompt (8400715134): hello
+2026-08-04 15:13:21,097 INFO     telegram.ext.Application: Application is stopping. This might take a moment.
+2026-08-04 15:13:21,099 INFO     telegram.ext.Application: Application.stop() complete
+2026-08-04 15:13:21,102 INFO     claude-tele: claude-tele shut down cleanly (caffeinate stopped, pidfile removed).

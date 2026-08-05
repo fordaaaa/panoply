@@ -1,0 +1,17 @@
+{
+  "bot_token": "PASTE_BOTFATHER_TOKEN_HERE",
+  "allowed_user_ids": [123456789],
+  "owner_chat_id": null,
+  "work_dir": ".",
+  "workspace_root": ".",
+  "claude_bin": "claude",
+  "shell_enabled": false,
+  "shell_passphrase_hash": "",
+  "idle_lock_seconds": 300,
+  "command_timeout_seconds": 300,
+  "allow_root": false,
+  "unauthorized_lockout_threshold": 5,
+  "unauthorized_lockout_window_seconds": 60,
+  "unauthorized_lockout_cooldown_seconds": 900,
+  "owner_alert_throttle_seconds": 60
+}

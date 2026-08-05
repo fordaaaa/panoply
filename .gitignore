@@ -10,3 +10,24 @@
 # commit their own .claude/cr/ — but we don't publish ours.
 .claude/cr/
 .claude/settings.local.json
+
+# claude-tele — bot secrets and runtime state. config.json holds the bot
+# token + user-ID whitelist and must NEVER be committed. The outbox is a
+# transient media-handoff channel; the venv and bytecode are local build state.
+claude-tele/config.json
+claude-tele/.venv/
+claude-tele/outbox/
+# Runtime state: the audit log (records executed actions) and the pidfile
+# (single-instance guard / stop.sh target). Neither should be committed.
+claude-tele/audit.log
+claude-tele/claude-tele.pid
+
+# browser-capture — Playwright/capture runtime state. The venv holds the
+# Chromium download; captures/ and videos/ are transient captured media that
+# gets pushed to the bot and shouldn't be committed.
+browser-capture/.venv/
+browser-capture/captures/
+browser-capture/videos/
+
+__pycache__/
+*.pyc

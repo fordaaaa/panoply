@@ -103,8 +103,6 @@ Once subagents report back:
 6. If `WebSearch`/`WebFetch` are available and a finding involves a specific third-party library/version, do a quick search for a matching known CVE or advisory (e.g. NVD, GitHub Advisory Database) and cite it if found — this turns a vague "this pattern looks risky" into a concrete "this matches CVE-2024-XXXX." Don't block the report waiting on this; skip it if the lookup is inconclusive.
 7. If a `postgres` MCP server is configured and a finding involves a database query, use it to check the actual schema/column types instead of guessing from the code — this sharpens SQL-injection findings (e.g. confirming a raw string really does reach a query, not just something that looks like one) and helps rule out false positives where an ORM already parameterizes the call.
 
-If a Sentry MCP server is configured (see [Tracker selection](#tracker-selection)), cross-reference each HIGH finding against recent production errors/issues in Sentry before finalizing severity — a finding that's already causing crashes in prod should be called out explicitly as such.
-
 ## Step 2.5 — drop findings already tracked as open issues (GitHub mode only)
 
 Skip this step entirely in local-only mode. List currently open review issues (reuse the list from Step 0.3 if you already fetched it there; otherwise `gh issue list --state open --limit 100` or the tracker equivalent). For each finding surviving Step 2, check whether it matches an open issue by file + category + fuzzy description — same tolerant-of-line-drift matching `/cr-baseline` uses, since the code may have shifted slightly since filing. Drop matches from the main report and replace them with a single "N findings already tracked as open issues (see #12, #17, ...)" line so the report stays focused on what's genuinely new. If a finding shares a location with an open issue but is clearly a distinct vulnerability, don't drop it — report it as new. This is independent of (and stacks with) the `/cr-baseline` suppression from Step 0.4 — baseline is for things you've deliberately accepted; this is for things already sitting in the tracker.
@@ -112,8 +110,6 @@ Skip this step entirely in local-only mode. List currently open review issues (r
 ## Step 3 — report to the user
 
 Present findings as a table: severity, category, file:line, one-line summary, exploit scenario, fix suggestion. Then, per the mode chosen in Step 0.2: in **GitHub mode**, ask the user explicitly whether to file issues for some/all of these — do not create issues without confirmation. In **local-only mode**, instead ask whether to apply some/all of the fixes directly to the working tree now (Step 4b).
-
-If a Slack MCP server is configured, the user is in GitHub mode, and they want findings posted there too, ask which channel, then post a short summary of HIGH-severity findings only (channel messages should stay skimmable — link to the filed issues rather than repeating full detail). Skip this in local-only mode — the whole point is that nothing gets posted anywhere.
 
 ## Step 4 — file issues (GitHub mode only, after user confirms)
 
@@ -139,9 +135,9 @@ Keep it terse and durable — skip anything already obvious from the code or the
 
 ## Tracker selection
 
-Before filing anything, check `ToolSearch` (query `"mcp__linear"`) for a configured Linear MCP server:
+Honor the saved `tracker:` from `.claude/cr/config.md` if present (written by `/cr-run`'s first-run setup):
 
-- **If Linear MCP tools are available**, use them (`create_issue`, `list_issues`, `update_issue`, `create_comment`) instead of `gh issue`. Ask the user which Linear team/project to file into if it's not obvious.
-- **Otherwise**, use the `github` MCP server's tools if configured, or plain `gh issue` (GitHub CLI) if not — either way, GitHub issues as before.
+- **`tracker: linear`** — use the Linear MCP tools (`create_issue`, `list_issues`, `update_issue`, `create_comment`). Check `ToolSearch` (query `"mcp__linear"`) that they're available; if not, the first call opens the browser OAuth login. Ask which Linear team/project to file into if it's not obvious.
+- **`tracker: github`** or no config — use plain `gh issue` (GitHub CLI); if a Linear server happens to be connected and there's no config, prefer it.
 
-See the root [README](../../README.md#mcp-integrations) for how to configure Linear, Slack, and Sentry MCP servers.
+See the root [README](../../README.md#mcp-integrations) for how tracker setup works.

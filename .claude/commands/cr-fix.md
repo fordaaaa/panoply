@@ -5,6 +5,10 @@ argument-hint: "<issue-number> [issue-number ...] | all"
 
 Fix GitHub issue(s) previously filed (typically by `/cr-run`) and open a pull request. This command DOES edit code, unlike `/cr-run`.
 
+## Step 0.0 — first-run setup (only if not set up yet)
+
+Look for `.claude/cr/config.md`. **If it exists, read it** — the `filing:` and `tracker:` lines tell you how the user wants fixes delivered and which tracker to use; skip to Step 0. **If it's missing**, this repo hasn't been set up yet: run the plain-language first-run setup from `/cr-run` Step 0.0 (offer quick setup vs. self-configure, ask the filing + tracker questions, run the connection check for the chosen tracker, and write `.claude/cr/config.md`). Keep it friendly and jargon-free — assume the user may not be technical. Then continue.
+
 ## Step 0 — resolve target issues
 
 Pick a tracker per [Tracker selection](#tracker-selection) below. Argument: `$ARGUMENTS`.
@@ -21,7 +25,7 @@ For each issue (or group), read the referenced file:line and surrounding context
 
 ## Step 1.5 — choose trace mode
 
-Before touching anything, ask the user once how they want this fix delivered:
+**If `.claude/cr/config.md` has a saved `filing:` preference (Step 0.0), use it silently** — `filing: local` → Local-only mode below; `filing: all` or `high-only` → GitHub mode below. Only ask if there's no saved preference:
 
 - **GitHub mode (default)** — continue exactly as below: branch, commit, push, open a PR, and keep the source issues linked/commented per Steps 5-6.
 - **Local-only mode** — fix directly on the current branch, in the working tree, no traces left anywhere. Skip Step 2 (no new branch) and skip Step 5's push/PR — the fixes just sit uncommitted in the working tree for the user to review, commit, or discard themselves. Don't comment on or close the source issues in Steps 5/6 either, since there's nothing on GitHub to point at yet.
@@ -68,9 +72,10 @@ In **GitHub mode**, give the user the PR link, current issue state (open/merged-
 
 ## Tracker selection
 
-Before touching any issue, check `ToolSearch` (query `"mcp__linear"`) for a configured Linear MCP server:
+Honor the saved `tracker:` from `.claude/cr/config.md` (Step 0.0):
 
-- **If Linear MCP tools are available**, use them (`get_issue`, `list_issues`, `update_issue`, `create_comment`) for issue lookups/comments instead of `gh issue`. `Fixes #<n>`-style auto-linking is GitHub-specific — for Linear, include the Linear issue ID in the PR body and update the Linear issue's status manually via MCP once merged (Linear's own GitHub integration will otherwise double-handle it if both are active — check with the user which should own status changes).
-- **Otherwise**, use the `github` MCP server's tools if configured, or plain `gh issue`/`gh pr` (GitHub CLI) if not — either way, GitHub as before.
+- **`tracker: linear`** — use the Linear MCP tools (`get_issue`, `list_issues`, `update_issue`, `create_comment`) for issue lookups/comments instead of `gh issue`. Check `ToolSearch` (query `"mcp__linear"`) that they're available; if not, the first call opens the browser OAuth login. `Fixes #<n>`-style auto-linking is GitHub-specific — for Linear, include the Linear issue ID in the PR body and update the Linear issue's status manually via MCP once merged (Linear's own GitHub integration will otherwise double-handle it if both are active — check with the user which should own status changes).
+- **`tracker: github`** (default) — use plain `gh issue`/`gh pr` (GitHub CLI). If `gh auth status` shows the user isn't logged in, run the connection check from `/cr-run` Step 0.0 first rather than failing.
+- **No config** — check `ToolSearch` (query `"mcp__linear"`) for Linear; if present use it, otherwise fall back to `gh`.
 
-See the root [README](../../README.md#mcp-integrations) for how to configure the Linear MCP server.
+See the root [README](../../README.md#mcp-integrations) for how tracker setup works.

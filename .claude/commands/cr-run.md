@@ -5,6 +5,45 @@ argument-hint: "[low|medium|high]"
 
 Run a code review of this repository using parallel read-only subagents, then report findings ranked by severity. This command never edits files by itself — see `/cr-fix` for that.
 
+## Step 0.0 — first-run setup (only if not set up yet)
+
+Look for `.claude/cr/config.md`. **If it already exists, skip this whole step** and read it — it tells you how the user wants findings handled (parse the `filing:` and `tracker:` lines). **If it's missing, this is the user's first run**, so walk them through a short, plain-language setup before doing anything else. Keep it friendly — assume the person may not be technical. Don't use jargon without explaining it.
+
+First, offer them a choice (`AskUserQuestion` if available):
+
+- **Quick setup (recommended)** — answer 2 short questions and Claude sorts out the rest.
+- **I'll configure it myself** — tell them the config lives at `.claude/cr/config.md` and show them the format (below), then create it with defaults (`filing: high-only`, `tracker: github`) and move on.
+
+For quick setup, ask these, one at a time, in plain language:
+
+1. **"When I find problems in your code, what should I do with them?"**
+   - **File all of them** → `filing: all` — every confirmed finding becomes a tracked issue you can act on later.
+   - **Only file the important ones (recommended)** → `filing: high-only` — only 🔴 Critical and 🟠 High findings get filed; the smaller stuff is just shown to you in the summary.
+   - **Don't file anything, just show me** → `filing: local` — nothing is ever filed, committed, or pushed; you only get an on-screen report (and can ask for local fixes).
+2. **(skip this question if they chose "Don't file anything")** "Where should the filed issues live?"
+   - **GitHub (recommended)** → `tracker: github`
+   - **Linear** → `tracker: linear`
+
+Then run the **connection check** below so whichever tracker they picked actually works, and finally **write `.claude/cr/config.md`** in this format:
+
+```
+# cr config
+filing: high-only     # all | high-only | local
+tracker: github       # github | linear
+setup-complete: true
+```
+
+Confirm in one friendly line what you set up (e.g. "Done — I'll file only the important issues to GitHub. You can change this anytime by editing `.claude/cr/config.md` or telling me to reconfigure.").
+
+### Connection check (part of first-run setup)
+
+Skip this if they chose `filing: local` — no tracker is needed. Otherwise make sure the chosen tracker is actually reachable, and if not, walk the user through fixing it in plain language. Run `claude mcp list` (or `ToolSearch` for the relevant `mcp__` tools) to see what's connected, then:
+
+- **GitHub** — the friendliest path is the GitHub CLI, not a token. Run `gh auth status`. If it says not logged in (or `gh` errors), tell the user "I need to connect to your GitHub account — this opens a browser window where you log in once," then run `gh auth login` (walk them through the prompts: GitHub.com → HTTPS → "Login with a web browser"). If `gh` isn't installed, point them to <https://cli.github.com/> and offer to install it via their package manager (e.g. `brew install gh`). Re-check `gh auth status` after.
+- **Linear** — if `mcp__linear` tools aren't available yet, the first time you call one Claude Code opens a browser login (OAuth) — tell the user "a browser window will pop up to log into Linear; approve it once and I'll remember it." Trigger it by making a harmless Linear call (e.g. list teams) and let them approve. If it still fails, confirm `.mcp.json` has the Linear server and that they reloaded this repo.
+
+If a server the user *didn't* pick shows as failed/disconnected in `claude mcp list`, don't nag about it — it's not needed for their choice. Only fix what the chosen tracker requires.
+
 ## Step 0 — parse complexity level
 
 Argument: `$ARGUMENTS` (default `medium` if empty). This controls how many subagents you spawn and how deep each one goes:
@@ -17,9 +56,14 @@ Scope: if the repo has a substantial uncommitted diff or the user references a P
 
 ## Step 0.2 — choose trace mode
 
-Before doing any review work, ask the user once (`AskUserQuestion` if available, otherwise a plain question) how they want this run handled once findings are in:
+**If `.claude/cr/config.md` has a saved `filing:` preference (from Step 0.0), use it silently — do not ask again.** Map it as:
 
-- **GitHub mode (default)** — normal flow: report findings, then if the user confirms in Step 3, file them as GitHub issues (or the configured tracker) per Step 4, giving a visible paper trail others can see and that `/cr-fix` can later pick up.
+- `filing: local` → **Local-only mode** below.
+- `filing: all` or `filing: high-only` → **GitHub mode** below (the difference between the two only matters in Step 4, which findings get filed).
+
+Only if there's no saved preference (e.g. the user chose "configure it myself" and cleared it, or is running this in a repo without config), ask once (`AskUserQuestion` if available, otherwise a plain question) how they want this run handled once findings are in:
+
+- **GitHub mode (default)** — normal flow: report findings, then file them to the configured tracker per Step 4, giving a visible paper trail others can see and that `/cr-fix` can later pick up.
 - **Local-only mode** — nothing gets filed, committed, or pushed anywhere. After the Step 3 report, if the user wants any findings fixed now, apply the fix directly to the working tree yourself (Step 4b) — no branch, no commit, no push, no issue. The change sits uncommitted for the user to review, commit, or discard on their own.
 
 Carry this choice through the rest of the run — don't ask again per finding. In local-only mode, skip Step 4 (issue filing) entirely.
@@ -71,11 +115,16 @@ Skip this step entirely in local-only mode. List currently open review issues (r
 
 ## Step 3 — report to the user
 
-Present the findings as a table or list: severity emoji, file:line, one-line summary, one-line fix suggestion. Then, per the mode chosen in Step 0.2: in **GitHub mode**, ask the user explicitly whether to file GitHub issues for some/all of these findings — do not create issues without this confirmation. In **local-only mode**, instead ask whether to apply some/all of the fixes directly to the working tree now (Step 4b).
+Present the findings as a table or list: severity emoji, file:line, one-line summary, one-line fix suggestion. Then, per the mode chosen in Step 0.2 and the saved `filing:` preference:
 
-## Step 4 — file issues (GitHub mode only, after user confirms)
+- **GitHub mode, `filing: all`** — tell the user you're filing all confirmed findings, then proceed to Step 4 automatically (no per-run yes/no needed — they already opted into auto-filing during setup). Still show the report first so they see what's being filed.
+- **GitHub mode, `filing: high-only`** — file only 🔴 Critical and 🟠 High findings automatically (Step 4), and just show the 🟡/🟢/⚪ ones in the report without filing them. Say so explicitly (e.g. "Filing the 2 high-severity issues; the 3 minor ones are listed above but not filed").
+- **GitHub mode with no saved preference** — ask the user explicitly whether to file issues for some/all of these findings; do not create issues without this confirmation.
+- **Local-only mode** — instead ask whether to apply some/all of the fixes directly to the working tree now (Step 4b).
 
-Skip this step entirely in local-only mode. Pick a tracker per [Tracker selection](#tracker-selection) below. List existing open items first and skip anything already filed (compare by file/line/description, not title wording). For each confirmed finding, create an item with:
+## Step 4 — file issues (GitHub mode)
+
+Skip this step entirely in local-only mode. **Which findings get filed depends on the saved `filing:` preference** (Step 0.0): `all` → every confirmed finding; `high-only` → only 🔴 Critical and 🟠 High findings; no saved preference → whatever subset the user confirmed in Step 3. Pick a tracker per [Tracker selection](#tracker-selection) below. List existing open items first and skip anything already filed (compare by file/line/description, not title wording). For each finding to be filed, create an item with:
 
 - Title: `<severity emoji> <short description> (<file>:<line>)`
 - Body: file:line, what's wrong, concrete fix suggestion, severity level (spelled out), and a severity label/tag if the tracker supports one (create new labels only if the user agrees).
@@ -92,9 +141,10 @@ If `.claude/cr/learn.enabled` exists (see `/cr-learn`), append any genuinely new
 
 ## Tracker selection
 
-Before filing anything, check `ToolSearch` (query `"mcp__linear"`) for a configured Linear MCP server:
+Honor the saved `tracker:` from `.claude/cr/config.md` (Step 0.0):
 
-- **If Linear MCP tools are available**, use them (`create_issue`, `list_issues`, `update_issue`, `create_comment`, etc.) instead of `gh issue`. Ask the user which Linear team/project to file into if it's not obvious from context.
-- **Otherwise**, use the `github` MCP server's tools if configured, or plain `gh issue` (GitHub CLI) if not — either way, GitHub issues as before.
+- **`tracker: linear`** — use the Linear MCP tools (`create_issue`, `list_issues`, `update_issue`, `create_comment`, etc.). Check `ToolSearch` (query `"mcp__linear"`) that they're available; if not, the first call opens the browser OAuth login (see Step 0.0's connection check). Ask which Linear team/project to file into if it's not obvious from context.
+- **`tracker: github`** (default) — use plain `gh issue` (GitHub CLI). If `gh auth status` shows the user isn't logged in, run the connection check from Step 0.0 first rather than failing.
+- **No config** — check `ToolSearch` (query `"mcp__linear"`) for Linear; if present use it, otherwise fall back to `gh issue`.
 
-See the root [README](../../README.md#mcp-integrations) for how to configure the Linear MCP server.
+See the root [README](../../README.md#mcp-integrations) for how tracker setup works.

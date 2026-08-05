@@ -46,6 +46,6 @@ Keep this to a glance-able summary — no per-issue deep dives, no fix suggestio
 Before doing anything, check `ToolSearch` (query `"mcp__linear"`) for a configured Linear MCP server:
 
 - **If Linear MCP tools are available**, use them (`list_issues`) instead of `gh issue`.
-- **Otherwise**, use the `github` MCP server's tools if configured, or plain `gh issue list --state open` (GitHub CLI) if not — either way, GitHub issues as before.
+- **Otherwise**, use plain `gh issue list --state open` (GitHub CLI) — GitHub issues as before.
 
 See the root [README](../../README.md#mcp-integrations) for how to configure the Linear MCP server.

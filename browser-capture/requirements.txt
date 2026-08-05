@@ -1,0 +1,11 @@
+# browser-capture — Python dependencies
+# Requires Python 3.10+
+#
+# After installing, download the Chromium browser Playwright drives:
+#     playwright install chromium
+#
+# Optional (not a pip dependency): ffmpeg on PATH enables high-quality
+# video->gif conversion. Without it, gif capture degrades gracefully to a
+# Pillow-built frame-sequence gif. Pillow is pulled in below for that path.
+playwright>=1.40
+Pillow>=10.0

@@ -6,7 +6,7 @@ This is the security-focused counterpart to `cr-run.md` — use that one for gen
 
 The vulnerability taxonomy, exclusion list, and confidence scoring below are adapted from Anthropic's open-source [`claude-code-security-review`](https://github.com/anthropics/claude-code-security-review) action (MIT licensed) — see the repo README for attribution.
 
-If your tool has an MCP server connected for an issue tracker (Linear), CVE/advisory lookup, or Slack, use those instead of `gh issue`/manual search wherever this prompt mentions them. See the Claude Code version's [MCP integrations](../README.md#mcp-integrations) for the pattern this is based on.
+If your tool has an MCP server connected for an issue tracker (Linear) or CVE/advisory lookup, use those instead of `gh issue`/manual search wherever this prompt mentions them. See the Claude Code version's [MCP integrations](../README.md#mcp-integrations) for the pattern this is based on.
 
 ---
 
