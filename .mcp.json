@@ -1,32 +1,8 @@
 {
   "mcpServers": {
-    "telegram-bot-mcp": {
-      "command": "/Users/user/Documents/GitHub/telegram-bot-mcp/target/release/telegram-bot-mcp",
-      "args": ["mcp"]
-    },
-    "linear": {
+    "github": {
       "type": "http",
-      "url": "https://mcp.linear.app/mcp"
-    },
-    "postgres": {
-      "command": "npx",
-      "args": ["-y", "@henkey/postgres-mcp-server", "--connection-string", "${DATABASE_URL}"]
-    },
-    "semgrep": {
-      "command": "docker",
-      "args": ["run", "-i", "--rm", "ghcr.io/semgrep/mcp", "-t", "stdio"]
-    },
-    "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest", "--browser", "chrome", "--executable-path", "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"]
-    },
-    "playwright-firefox": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest", "--browser", "firefox"]
-    },
-    "context7": {
-      "type": "http",
-      "url": "https://mcp.context7.com/mcp"
+      "url": "https://api.githubcopilot.com/mcp/"
     }
   }
 }
