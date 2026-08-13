@@ -1,0 +1,86 @@
+---
+name: spec
+description: Turn a feature request into a resumable spec with a checklist on disk, then work it one task at a time
+argument-hint: "[what you want | resume | status]"
+---
+
+Write the plan to a file, then execute it from the file. Context windows compact, sessions end, and tools get swapped — a plan that lives only in the transcript dies with it, and the next session confidently rebuilds something subtly different. This command puts the plan in `.panoply/specs/<slug>.md` and treats that file as the source of truth.
+
+Argument: `$ARGUMENTS`.
+
+{{INCLUDE:_untrusted.md}}
+
+## Step 1 — resolve mode
+
+- `status` → list every spec in `.panoply/specs/` with its `status:` and its unticked-task count. Stop.
+- `resume` → pick the most recently modified spec with `status: in-progress` (if several, ask which). Go to Step 6.
+- `resume <slug>` → that spec. Go to Step 6.
+- anything else → a new spec for that request. Continue.
+- empty → if exactly one spec is in progress, resume it; otherwise ask what to build.
+
+## Step 2 — interrogate the request
+
+Extract, and don't skip any:
+
+- **Objective** — the single outcome that means done.
+- **Acceptance criteria** — 3–7 checkable statements. Each must be verifiable by running something or reading something, not by opinion. "Handles errors gracefully" is not a criterion; "returns 400 with `{error}` on malformed JSON" is.
+- **Non-goals** — what this explicitly does not do. This is the field that prevents scope creep three hours later.
+- **Assumptions** — anything a competent stranger would need that wasn't said.
+
+Prefer stating an assumption over blocking on a question. Ask only where two readings lead to materially different work.
+
+## Step 3 — locate the work
+
+Read `.panoply/map.md` if it exists (run `/map` first if it doesn't and the repo is unfamiliar). Otherwise search for the surfaces this touches. Produce the concrete list of files that will change, and flag any you're unsure about — an unknown file is a task, not an assumption.
+
+## Step 4 — write the spec
+
+Create `.panoply/specs/<slug>.md` — slug is 2–4 kebab-case words from the objective:
+
+```
+---
+slug: <slug>
+status: in-progress    # in-progress | verified | abandoned
+created: <ISO date>
+---
+
+# <objective, one line>
+
+## Acceptance criteria
+- [ ] <criterion>
+
+## Non-goals
+- <thing this deliberately does not do>
+
+## Files
+- `path` — what changes here
+
+## Tasks
+- [ ] <smallest useful unit of work>
+
+## Decisions
+<append-only. Each entry: what was decided, and why. Never edit a past entry.>
+
+## Assumptions
+- <assumption>
+```
+
+Show it to the user and get a yes before writing code. This is the cheapest moment to be wrong.
+
+## Step 5 — execute
+
+One task at a time, in order. After each one:
+
+1. **Tick the box on disk immediately.** Not at the end, not in batches — the file is the state, and a crash between task 3 and the final write loses everything.
+2. If the task revealed something that changes the plan, append to **Decisions** and adjust the remaining tasks. Say what changed and why.
+3. Never tick a box for work you didn't finish. A half-done task stays unticked with a note.
+
+Do not silently add tasks outside the Files list. If the work is spilling into files the spec didn't name, stop and say so — that's a sign the spec was wrong, and the user should know before the diff triples.
+
+## Step 6 — resume path
+
+Read the spec. Replay the **Decisions** log so you inherit past reasoning instead of re-deriving it. Then, before continuing, **re-verify the unticked tasks are still valid** — the repo may have moved since the spec was written, and a ticked box is a claim about a file that may no longer be true. Spot-check one or two completed tasks against the actual code. Then continue from Step 5.
+
+## Step 7 — hand off
+
+When every task is ticked, do **not** set `status: verified` yourself. Point the user at `/verify <slug>`, which checks the acceptance criteria against reality and writes the verdict back. A spec that marks its own homework is just a to-do list.

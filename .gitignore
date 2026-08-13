@@ -2,6 +2,9 @@
 # Consumers of these commands may commit their own; we don't publish ours.
 .ai-skills/
 
+# Map, specs, and debug ledgers written by /map, /spec, /verify, /debug.
+.panoply/
+
 # Local editor/agent state
 .claude/settings.local.json
 
