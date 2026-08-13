@@ -2,7 +2,6 @@
 name: prompt
 description: Compile a raw request into a structured, intent-preserving prompt plus a base plan, with a token-discipline pass (runs in a cheap subagent)
 argument-hint: "[what you want, in plain words]"
-bootstrap: false
 ---
 
 Treat the user's words as **raw intent**, not a finished instruction. The compilation runs in a **subagent** so it doesn't burn main-thread context; your job is to dispatch it, then relay the result.
