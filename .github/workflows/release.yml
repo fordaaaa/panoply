@@ -1,0 +1,57 @@
+name: release
+
+# Publishes to npm on a version tag. Authentication is npm trusted publishing
+# via GitHub OIDC — there is no NPM_TOKEN secret to leak or rotate. Provenance
+# attestations are generated automatically; `--provenance` is not needed.
+#
+# One-time setup on npmjs.com (package -> Settings -> Publishing access):
+#   repository = fordaaaa/panoply, workflow = release.yml
+# That page only exists once the package has been published once, so v0.1.0
+# goes out manually and every release after it comes through here.
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # mint the OIDC token npm exchanges for publish rights
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Trusted publishing needs Node >=22.14.0 and npm >=11.5.1.
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Use an npm new enough for trusted publishing
+        run: npm install -g npm@latest
+
+      # No install step — this project has no dependencies and must keep it that way.
+      - name: Lint canonical sources
+        run: node build.mjs --lint
+
+      - name: Generated files are up to date
+        run: node build.mjs --check
+
+      - name: Build is deterministic
+        run: |
+          node build.mjs
+          git diff --exit-code
+
+      - name: Tag matches the version being published
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(node -p 'require("./package.json").version')"
+          if [ "$tag" != "$pkg" ]; then
+            echo "tag $GITHUB_REF_NAME does not match package.json version $pkg" >&2
+            exit 1
+          fi
+          echo "publishing $pkg"
+
+      - name: Publish
+        run: npm publish
