@@ -7,7 +7,7 @@ bootstrap: true
 
 Fix issue(s) previously filed (typically by `/cr-run`) and open a pull request. Unlike `/cr-run`, this command **does** edit code.
 
-{{BOOTSTRAP}}
+{{INCLUDE:_bootstrap.md}}
 
 ## Step 1 — resolve target issues
 

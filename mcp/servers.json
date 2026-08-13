@@ -1,0 +1,11 @@
+{
+  "$comment": "Canonical MCP roster. build.mjs renders this into .mcp.json (Claude Code), the mcp block of opencode.json, and .cursor/mcp.json. Edit here only. profile 'default' ships in every generated config; 'opt-in' ships only with `node build.mjs --with <name>`.",
+
+  "github": {
+    "profile": "default",
+    "transport": "http",
+    "url": "https://api.githubcopilot.com/mcp/",
+    "auth": "oauth",
+    "why": "/cr-run files issues and /cr-fix opens PRs."
+  }
+}

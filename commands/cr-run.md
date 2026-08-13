@@ -7,7 +7,7 @@ bootstrap: true
 
 Run a code review of this repository using parallel read-only subagents, then report findings ranked by severity. This command never edits files by itself — see `/cr-fix` for that.
 
-{{BOOTSTRAP}}
+{{INCLUDE:_bootstrap.md}}
 
 ## Step 1 — parse complexity level
 
