@@ -1,0 +1,44 @@
+{
+  "name": "panoply",
+  "version": "0.1.0",
+  "description": "Every skill and MCP server you use, in one place, installable into any AI coding agent. One source, compiled to Claude Code, opencode, Cursor, or copy-paste.",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "panoply": "./bin/init.mjs"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "check": "node build.mjs --check",
+    "lint": "node build.mjs --lint"
+  },
+  "files": [
+    "bin",
+    "commands",
+    "prompts",
+    "mcp",
+    ".claude",
+    ".opencode",
+    ".cursor",
+    "build.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "claude-code",
+    "opencode",
+    "cursor",
+    "slash-commands",
+    "code-review",
+    "mcp",
+    "ai-agent"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fordaaaa/panoply.git"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}

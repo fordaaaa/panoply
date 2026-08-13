@@ -1,0 +1,20 @@
+{
+  "name": "panoply",
+  "owner": {
+    "name": "fordaaaa",
+    "url": "https://github.com/fordaaaa"
+  },
+  "metadata": {
+    "description": "Every skill and MCP server you use, in one place, installable into any AI coding agent. One source, compiled to Claude Code, opencode, Cursor, or copy-paste.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "panoply",
+      "source": "./",
+      "description": "Every skill and MCP server you use, in one place, installable into any AI coding agent. One source, compiled to Claude Code, opencode, Cursor, or copy-paste.",
+      "version": "0.1.0",
+      "category": "development"
+    }
+  ]
+}

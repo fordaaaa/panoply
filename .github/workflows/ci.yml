@@ -1,0 +1,55 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # No install step — this project has no dependencies and must keep it that way.
+      - name: Lint canonical sources
+        run: node build.mjs --lint
+
+      - name: Generated files are up to date
+        run: node build.mjs --check
+
+      - name: Build is deterministic
+        run: |
+          node build.mjs
+          git diff --exit-code
+
+      - name: No runtime dependencies, versions in lockstep
+        run: |
+          node -e '
+            const fs = require("fs");
+            const read = (p) => JSON.parse(fs.readFileSync(p, "utf8"));
+            const pkg = read("package.json");
+            const plugin = read(".claude-plugin/plugin.json");
+            const market = read(".claude-plugin/marketplace.json");
+
+            const deps = Object.keys(pkg.dependencies ?? {});
+            if (deps.length) throw new Error("package.json gained dependencies: " + deps.join(", "));
+
+            const versions = [pkg.version, plugin.version, market.metadata.version, market.plugins[0].version];
+            if (new Set(versions).size !== 1) {
+              throw new Error("version mismatch: " + versions.join(" / "));
+            }
+            console.log("ok — no deps, all versions at " + pkg.version);
+          '
+
+      - name: Installer runs clean in an empty project
+        run: |
+          mkdir -p /tmp/probe && cd /tmp/probe
+          node "$GITHUB_WORKSPACE/bin/init.mjs" init --all
+          test -f .claude/commands/cr-run.md
+          test -f .cursor/commands/cr-run.md
+          test -f .opencode/commands/cr-run.md
+          test -f .mcp.json

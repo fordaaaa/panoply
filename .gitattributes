@@ -1,0 +1,6 @@
+# Generated output is byte-compared by `node build.mjs --check`. A CRLF checkout
+# would make every file look stale and break {{INCLUDE:}} substitution.
+* text=auto eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.mjs text eol=lf

@@ -1,9 +1,11 @@
 # Per-repo answers written by the bootstrap step (filing/autoclose), plus the
-# map, specs, and debug ledgers the commands write. Consumers may commit their
-# own; we don't publish ours.
+# artifacts the commands write. Consumers may commit their own map/specs;
+# we don't publish ours.
 .panoply/
 
 # Local editor/agent state
 .claude/settings.local.json
 
 node_modules/
+__pycache__/
+*.pyc

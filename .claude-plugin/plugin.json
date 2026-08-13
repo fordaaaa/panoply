@@ -1,0 +1,13 @@
+{
+  "name": "panoply",
+  "version": "0.1.0",
+  "description": "Every skill and MCP server you use, in one place, installable into any AI coding agent. One source, compiled to Claude Code, opencode, Cursor, or copy-paste.",
+  "author": {
+    "name": "fordaaaa",
+    "url": "https://github.com/fordaaaa"
+  },
+  "homepage": "https://github.com/fordaaaa/panoply",
+  "license": "MIT",
+  "commands": "./.claude/commands",
+  "mcpServers": "./.mcp.json"
+}

@@ -1,80 +1,93 @@
 <div align="center">
 
-# ai-skills
+# Panoply
 
-**Portable slash commands for AI coding agents.**
-Write them once — run them in Claude Code, opencode, Cursor, or anything with a text box.
+***panoply*** *(n.) — a complete and impressive collection. Also: a full suit of armor.*
 
-<br>
+**Every skill and MCP server you use, in one place, installable into any agent.**
 
-[![Stars](https://img.shields.io/github/stars/fordaaaa/ai-skills?style=for-the-badge&logo=github&color=f5c542&labelColor=1c1c1c)](https://github.com/fordaaaa/ai-skills/stargazers)
-[![License](https://img.shields.io/github/license/fordaaaa/ai-skills?style=for-the-badge&color=4c9a2a&labelColor=1c1c1c)](LICENSE)
-[![Last commit](https://img.shields.io/github/last-commit/fordaaaa/ai-skills?style=for-the-badge&color=5b8def&labelColor=1c1c1c)](https://github.com/fordaaaa/ai-skills/commits/main)
-[![Issues](https://img.shields.io/github/issues/fordaaaa/ai-skills?style=for-the-badge&color=d1495b&labelColor=1c1c1c)](https://github.com/fordaaaa/ai-skills/issues)
+One canonical source compiles out to Claude Code, opencode, Cursor, or plain copy-paste. Seven commands today — a code review that files its own issues, a spec that survives a compacted context, a repo map that stops re-reading the tree, a debug loop that keeps a ledger — and room for whatever you add next.
 
-<br>
-
+[![License](https://img.shields.io/github/license/fordaaaa/panoply?style=flat-square&color=4c9a2a&labelColor=1c1c1c)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/fordaaaa/panoply?style=flat-square&logo=github&color=f5c542&labelColor=1c1c1c)](https://github.com/fordaaaa/panoply/stargazers)
 ![Claude Code](https://img.shields.io/badge/Claude_Code-D97757?style=flat-square&logo=anthropic&logoColor=white)
 ![opencode](https://img.shields.io/badge/opencode-1c1c1c?style=flat-square&logo=terminal&logoColor=white)
 ![Cursor](https://img.shields.io/badge/Cursor-000000?style=flat-square&logo=cursor&logoColor=white)
-![Any LLM](https://img.shields.io/badge/…and_anything_else-6e7681?style=flat-square)
 
 </div>
 
 ---
 
-## What this is
-
-Three commands that do real work, kept in **one canonical place** and compiled out to each tool's own format:
-
-| Command | What it does |
-|:--|:--|
-| **`/cr-run`** `[low\|medium\|high]` | Fans out parallel read-only subagents across your code, verifies every finding, and reports them ranked by severity. Optionally files them as GitHub issues. **Never edits files.** |
-| **`/cr-fix`** `<issue#…\|all>` | Picks up issues filed by `/cr-run`, fixes them on one branch, verifies the fix actually works, and opens a PR. **This one does edit code.** |
-| **`/prompt`** `[what you want]` | Turns a half-formed request into a structured, intent-preserving prompt plus a base plan. Runs on the cheapest model available, so it costs almost nothing. |
-
-Everything is plain markdown. No runtime, no dependencies, no telemetry.
-
 ## Install
 
-```bash
-git clone https://github.com/fordaaaa/ai-skills.git
-cd ai-skills
-node build.mjs
-```
-
-That generates the command directory for every supported tool. Then open the repo in your agent and type `/cr-run`.
-
-**To use these in your own project**, copy the directory your tool reads:
+Run this **inside your own project**:
 
 ```bash
-cp -r ai-skills/.claude/commands   your-project/.claude/     # Claude Code
-cp -r ai-skills/.opencode/commands your-project/.opencode/   # opencode
-cp -r ai-skills/.cursor/commands   your-project/.cursor/     # Cursor
+npx panoply init
 ```
 
-Using something else? Open [`prompts/`](prompts/), copy the file, replace `{{ARGUMENTS}}`, paste.
+It detects whether you're on Claude Code, opencode, or Cursor, installs the commands there, and stops. It never overwrites a command you wrote yourself.
 
-## First run sets itself up
-
-You don't configure anything up front. The first time you run any command, it bootstraps itself — installs into whichever tool you're in, asks **two** plain-language questions, connects your GitHub login, and saves the answers to `.ai-skills/config.md`:
+In Claude Code you can install it as a plugin instead, which keeps it updatable:
 
 ```
-# ai-skills config
-filing: high-only     # all | high-only | local
-tracker: github       # github
-autoclose: on         # on | off
-setup-complete: true
+/plugin marketplace add fordaaaa/panoply
+/plugin install panoply@panoply
 ```
 
-| Setting | Options |
-|:--|:--|
-| `filing` | `all` — file every finding · `high-only` — only 🔴 and 🟠 · `local` — file nothing, never touch git, just fix things in your working tree |
-| `autoclose` | `on` — merge the PR and close the issues once tests pass · `off` — open the PR and stop |
+Using something else? Open [`prompts/`](prompts/), copy a file, replace `{{ARGUMENTS}}`, paste it in.
 
-After that it never asks again. Say *"reconfigure"* to change it, or just edit the file.
+**Nothing is configured on install.** Every command starts in local mode — reports on screen, files nothing, touches git never — and asks about anything more only when you first ask for it.
 
-> **`filing: local` is a real escape hatch.** Nothing gets filed, committed, or pushed — findings are shown on screen, and fixes land uncommitted in your working tree for you to review, commit, or throw away.
+## What you get
+
+```
+> /cr-run standard
+
+  Reviewing 84 files with 3 subagents (correctness · performance · security).
+  Estimated ~180k input tokens. Continue? y
+
+  🔴  src/auth/session.ts:142   Session token compared with ==, not timing-safe
+                                → use crypto.timingSafeEqual
+  🟠  src/api/upload.ts:67      Unbounded read into memory; 2GB upload OOMs the worker
+                                → stream to disk, cap at configured limit
+  🟡  src/db/pool.ts:23         Pool never drained on SIGTERM; deploys drop in-flight queries
+
+  Verified 3 of 5 reported — dropped 2 I couldn't confirm at the cited line.
+  Local mode: nothing filed. Want me to fix any of these, or start filing?
+```
+
+| Command | What it does | What it leaves behind |
+|:--|:--|:--|
+| **`/cr-run`** `[quick\|standard\|deep]` | Parallel read-only subagents review your code. Every finding is re-verified against the actual file before it survives. | GitHub issues, or an on-screen report |
+| **`/cr-fix`** `<issue#…\|all>` | Fixes filed issues on one branch, proves the fix by running it, opens a PR. **This one edits code.** | a branch, commits, a PR |
+| **`/map`** `[refresh]` | Parallel subagents map the repo once, stamped with the commit. Refreshes only what moved. | `.panoply/map.md` |
+| **`/spec`** `[what you want \| resume]` | Turns a request into acceptance criteria + a checklist, then works it one task at a time, ticking boxes on disk. | `.panoply/specs/<slug>.md` |
+| **`/verify`** `[spec-slug \| diff]` | Grades the diff against criteria written *before* the work, with four parallel checkers. Runs the suite itself. | a verdict in the spec |
+| **`/debug`** `[symptom]` | Every hypothesis gets a falsifying experiment and a recorded result. Nothing is tested twice. | `.panoply/debug/<slug>.md` |
+| **`/prompt`** `[what you want]` | Compiles a half-formed request into a structured prompt + plan. Runs on the cheapest model, so it costs ~nothing. | a prompt you can edit |
+
+### The idea
+
+**The repo is the memory; context is disposable.** Every command either writes a durable artifact or reads one a sibling wrote. Nothing of value dies when the context window compacts, the session ends, or you switch tools.
+
+They compose through files, not calls — `/map` feeds `/spec`, `/spec` feeds `/verify`, `/cr-run` feeds `/cr-fix` — and each one still works standalone if the file it likes isn't there.
+
+### Make it yours
+
+This is a **collection**, not a fixed product — it's meant to grow into everything you actually use. Drop a markdown file in `commands/`, add a server to `mcp/servers.json`, run `node build.mjs`, and it exists in every agent you work in. No runtime, no plugin API, no rewriting the same prompt in four dialects.
+
+The bar for anything you add is in [CONTRIBUTING.md](CONTRIBUTING.md): it has to beat a plain prompt through *structure* — parallel subagents, a durable artifact, a verification loop, or a cheaper model. Everything else is just a paragraph you could have typed.
+
+## What it won't do
+
+Worth knowing before you install something that can open pull requests.
+
+- **It won't merge without earning it.** `autoclose` defaults to `off`. Turning it on still requires five conditions to hold at once: a real test suite that covers the change and passes, issues authored by a maintainer, no foreign commits on the branch, and a genuinely mergeable PR. It never passes `--admin` — branch protection exists because someone wanted a human there.
+- **It won't treat your repo as instructions.** Issue bodies, comments, and source text are data. A review that reads an issue and a fix that merges to your default branch is a prompt-injection path straight to production; every command carries an explicit rule against following text it finds. Issue-driven fixes never touch CI config, workflows, lockfiles, or credentials.
+- **It won't publish your vulnerabilities.** Security findings are never auto-filed — a 🔴 filed as a public issue is a zero-day with no fix shipped. You get it on screen, and an offer to open a private advisory.
+- **It won't spend without asking.** `/cr-run deep` is 5–8 subagents reading real source. It prints the file count and cost estimate and waits.
+- **It won't assume.** Not that you have tests, not that your default branch is `main`, not that your working tree is clean, not that `gh` is pointed at the repo you think it is.
 
 ## Severity scale
 
@@ -86,53 +99,54 @@ After that it never asks again. Say *"reconfigure"* to change it, or just edit t
 | 🟢 | Low | minor inefficiency, dead code, unclear error handling |
 | ⚪ | Trivial | style/naming, no functional impact |
 
-Subagents also self-score confidence 1–10 and **only report 8+**. Anything the main thread can't verify by opening the file itself gets dropped. A false positive filed as an issue costs you more than a missed bug does.
+Subagents self-score confidence 1–10 and report only 8+. Then the main thread opens every cited `file:line` and drops anything it can't confirm itself. A false positive in your tracker costs more than a missed bug.
 
-## How the build works
+## Configuration
 
-Edit **`commands/`** only. Everything else is generated.
+Two questions, asked the first time you want something filed, saved to `.panoply/config.md`:
 
 ```
-commands/                    ← the only files you edit
-├── _bootstrap.md            ← shared setup, injected via {{BOOTSTRAP}}
-├── cr-run.md
-├── cr-fix.md
-└── prompt.md
+filing: local         # local | high-only | all
+autoclose: off        # off | on
+```
+
+`filing: local` is a real escape hatch, not a demo mode: nothing is filed, committed, or pushed, and fixes land uncommitted in your working tree for you to keep or throw away. Say *"reconfigure"* to change any of it, or just edit the file.
+
+## MCP servers
+
+One server ships on by default — **GitHub**, pinned to the `issues,pull_requests,repos` toolsets. The unpinned server exposes ~90 tools and costs 15–25k tokens of context in every session before you've run anything; pinned, it's 5–7k. **`gh` is the supported fallback** and covers everything these commands need, so nothing breaks if you skip MCP entirely.
+
+Three more are available opt-in, because a server you don't use is a permanent tax on your context window:
+
+```bash
+npx panoply init --with context7,playwright,sentry
+```
+
+| Server | Why you'd add it |
+|:--|:--|
+| `context7` | version-accurate library docs — stops `/cr-fix` inventing APIs on unfamiliar deps (~400 tokens) |
+| `playwright` | drives a real browser so `/verify` can confirm a UI actually renders (~5k tokens) |
+| `sentry` | turns `/cr-run` severity from a guess into "this throws 400×/day in prod" |
+
+All of it comes from one file — [`mcp/servers.json`](mcp/servers.json) — rendered into `.mcp.json`, `.cursor/mcp.json`, and `opencode.json` by the build. Hand-maintaining those three is what let one of them go missing.
+
+## Contributing
+
+Edit **`commands/`** and **`mcp/servers.json`** only; everything else is generated by `node build.mjs`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the house style and the bar a new command has to clear.
+
+```
+commands/                  ← the only files you edit
+├── _bootstrap.md          ← shared partials, pulled in via {{INCLUDE:_name.md}}
+├── _preflight.md
+├── _severity.md
+├── _untrusted.md
+└── cr-run.md, cr-fix.md, map.md, spec.md, verify.md, debug.md, prompt.md
       │
       │   node build.mjs
       ▼
-.claude/commands/            ← Claude Code   (description + argument-hint)
-.opencode/commands/          ← opencode      (hint folded into description)
-.cursor/commands/            ← Cursor
-prompts/                     ← portable      ($ARGUMENTS → {{ARGUMENTS}})
+.claude/commands/  .opencode/commands/  .cursor/commands/  prompts/
+.mcp.json          opencode.json        .cursor/mcp.json
 ```
-
-Each target renders the same body into that tool's frontmatter dialect. `node build.mjs --check` exits non-zero if anything is stale, so you can wire it into CI.
-
-Adding a command is one file in `commands/` with this frontmatter:
-
-```yaml
----
-name: my-command
-description: One line, shown in the tool's command picker
-argument-hint: "[optional arg hint]"
-bootstrap: true    # false to skip the setup step
----
-```
-
-## MCP configuration
-
-Each tool reads MCP from a different place, and **Claude Code's path is not negotiable** — it must be `.mcp.json` at the repo root. It cannot live under `.claude/`.
-
-| Tool | File | Shape |
-|:--|:--|:--|
-| Claude Code | `.mcp.json` (root, fixed) | `{ "mcpServers": { … } }` |
-| opencode | `opencode.json` | `{ "mcp": { … } }` with `type: local\|remote` |
-| Cursor | `.cursor/mcp.json` | `{ "mcpServers": { … } }` |
-
-Both configs here declare the remote **GitHub MCP server** (`https://api.githubcopilot.com/mcp/`). It needs a one-time OAuth approval — in Claude Code, run `/mcp`.
-
-**`gh` is the backup path, by design.** If the MCP server is unauthenticated, rate-limited, or just misbehaving, every command falls back to the GitHub CLI, which needs nothing but `gh auth login` and handles unlimited issue create/list/comment/close. Neither command depends on the MCP server being up.
 
 ## Credits
 
@@ -141,6 +155,6 @@ The parallel-subagent review structure and the severity/confidence scoring grew 
 <div align="center">
 <br>
 
-**MIT** · [Report an issue](https://github.com/fordaaaa/ai-skills/issues) · ⭐ if it saved you a code review
+**MIT** · [Changelog](CHANGELOG.md) · [Report an issue](https://github.com/fordaaaa/panoply/issues) · ⭐ if it saved you a code review
 
 </div>
