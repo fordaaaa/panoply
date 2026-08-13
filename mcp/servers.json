@@ -4,8 +4,33 @@
   "github": {
     "profile": "default",
     "transport": "http",
-    "url": "https://api.githubcopilot.com/mcp/",
+    "url": "https://api.githubcopilot.com/mcp/?toolsets=issues,pull_requests,repos",
     "auth": "oauth",
-    "why": "/cr-run files issues and /cr-fix opens PRs."
+    "why": "/cr-run files issues and /cr-fix opens PRs. Toolsets are pinned: the unpinned server exposes ~90 tools (15-25k tokens every session); these three cover everything the commands need."
+  },
+
+  "context7": {
+    "profile": "default",
+    "transport": "http",
+    "url": "https://mcp.context7.com/mcp",
+    "auth": "none",
+    "why": "Version-accurate library docs. Cuts hallucinated APIs in /cr-fix on unfamiliar dependencies. Two tools, ~400 tokens, no auth - the cheapest server here."
+  },
+
+  "playwright": {
+    "profile": "default",
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "@playwright/mcp@latest"],
+    "auth": "none",
+    "why": "Drives a real browser so /verify can check a web UI actually renders. ~21 tools (~5k tokens); worth it on repos with a front end."
+  },
+
+  "sentry": {
+    "profile": "opt-in",
+    "transport": "http",
+    "url": "https://mcp.sentry.dev/mcp",
+    "auth": "oauth",
+    "why": "Turns /cr-run severity from a guess into evidence ('this path throws 400x/day in prod'). Only useful on a repo wired to Sentry, so it stays opt-in: enable with `node build.mjs --with sentry`."
   }
 }
