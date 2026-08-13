@@ -3,8 +3,12 @@
   "mcp": {
     "github": {
       "type": "remote",
-      "url": "https://api.githubcopilot.com/mcp/?toolsets=issues,pull_requests,repos",
-      "enabled": true
+      "url": "https://api.githubcopilot.com/mcp/",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_MCP_TOKEN}",
+        "X-MCP-Toolsets": "issues,pull_requests,repos"
+      }
     },
     "context7": {
       "type": "remote",

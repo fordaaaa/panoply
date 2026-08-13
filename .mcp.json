@@ -2,7 +2,11 @@
   "mcpServers": {
     "github": {
       "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/?toolsets=issues,pull_requests,repos"
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": {
+        "Authorization": "Bearer ${GITHUB_MCP_TOKEN}",
+        "X-MCP-Toolsets": "issues,pull_requests,repos"
+      }
     },
     "context7": {
       "type": "http",

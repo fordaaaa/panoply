@@ -140,6 +140,11 @@ function loadServers() {
 
 const stdio = (s) => s.transport === "stdio";
 
+// Headers are how the GitHub server takes both its credential and its toolset
+// filter. `${VAR}` is expanded by the host agent at load time, so a token is
+// never written into a generated file.
+const hdrs = (s) => (s.headers && Object.keys(s.headers).length ? { headers: s.headers } : {});
+
 const mcpTargets = [
   {
     name: "claude-code-mcp",
@@ -149,7 +154,7 @@ const mcpTargets = [
       for (const [n, s] of Object.entries(servers)) {
         mcpServers[n] = stdio(s)
           ? { type: "stdio", command: s.command, args: s.args ?? [] }
-          : { type: "http", url: s.url };
+          : { type: "http", url: s.url, ...hdrs(s) };
       }
       return JSON.stringify({ mcpServers }, null, 2) + "\n";
     },
@@ -161,7 +166,7 @@ const mcpTargets = [
       const mcpServers = {};
       for (const [n, s] of Object.entries(servers)) {
         // Cursor infers stdio from the presence of `command`; no `type` key.
-        mcpServers[n] = stdio(s) ? { command: s.command, args: s.args ?? [] } : { url: s.url };
+        mcpServers[n] = stdio(s) ? { command: s.command, args: s.args ?? [] } : { url: s.url, ...hdrs(s) };
       }
       return JSON.stringify({ mcpServers }, null, 2) + "\n";
     },
@@ -178,7 +183,7 @@ const mcpTargets = [
         // opencode takes a single `command` array, not command + args.
         mcp[n] = stdio(s)
           ? { type: "local", command: [s.command, ...(s.args ?? [])], enabled: true }
-          : { type: "remote", url: s.url, enabled: true };
+          : { type: "remote", url: s.url, enabled: true, ...hdrs(s) };
       }
       base.mcp = mcp;
       return JSON.stringify(base, null, 2) + "\n";

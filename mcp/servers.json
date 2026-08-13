@@ -4,9 +4,13 @@
   "github": {
     "profile": "default",
     "transport": "http",
-    "url": "https://api.githubcopilot.com/mcp/?toolsets=issues,pull_requests,repos",
-    "auth": "oauth",
-    "why": "/cr-run files issues and /cr-fix opens PRs. Toolsets are pinned: the unpinned server exposes ~90 tools (15-25k tokens every session); these three cover everything the commands need."
+    "url": "https://api.githubcopilot.com/mcp/",
+    "auth": "token",
+    "headers": {
+      "Authorization": "Bearer ${GITHUB_MCP_TOKEN}",
+      "X-MCP-Toolsets": "issues,pull_requests,repos"
+    },
+    "why": "/cr-run files issues and /cr-fix opens PRs. This server's OAuth does not support dynamic client registration, so the in-agent OAuth flow fails; a token in the Authorization header is the working path. Toolsets are filtered by the X-MCP-Toolsets header (44 tools -> 38) - the ?toolsets= query param is silently ignored."
   },
 
   "context7": {

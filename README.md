@@ -116,6 +116,20 @@ autoclose: off        # off | on
 
 One server ships on by default — **GitHub**, pinned to the `issues,pull_requests,repos` toolsets. The unpinned server exposes ~90 tools and costs 15–25k tokens of context in every session before you've run anything; pinned, it's 5–7k. **`gh` is the supported fallback** and covers everything these commands need, so nothing breaks if you skip MCP entirely.
 
+### Authenticating the GitHub server
+
+That server's OAuth doesn't support dynamic client registration, so the in-agent OAuth flow fails. Authenticate with a token in the `Authorization` header instead — the generated configs read it from `GITHUB_MCP_TOKEN`:
+
+```bash
+# ~/.bashrc, or wherever your shell exports live
+command -v gh >/dev/null 2>&1 && export GITHUB_MCP_TOKEN="$(gh auth token)"
+```
+
+Two ways this bites you, both surfacing as the same unhelpful `HTTP 400` on connect or reconnect:
+
+- **The variable isn't set in the launching process.** `${GITHUB_MCP_TOKEN}` is expanded by the agent at load time; unset, it goes out to GitHub as that literal string and comes back `error="invalid_token"`. A shell you opened *before* adding the export won't have it, and neither will a GUI or IDE launch that never sources your shell config. Check with `echo ${#GITHUB_MCP_TOKEN}` — you want `40`, not `0` — and start the agent from a shell that passes.
+- **The token went stale.** `gh auth token` is snapshotted once at shell startup, and `gho_` tokens rotate. A long session can connect fine and then fail to *reconnect* hours later; restart from a fresh shell to re-snapshot. If you'd rather not think about it, use a long-lived fine-grained PAT with `repo` scope instead of the `gh` token.
+
 Three more are available opt-in, because a server you don't use is a permanent tax on your context window:
 
 ```bash
