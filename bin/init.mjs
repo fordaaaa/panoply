@@ -185,5 +185,5 @@ for (const tool of chosen) install(tool);
 console.log(
   `\nDone. Reload your agent and the commands appear as /cr-run, /cr-fix, /map, /spec, /verify, /debug, /prompt.` +
   `\nNothing is configured yet — the commands run in local mode (report only, no filing, no git) until you ask for more.` +
-  (Object.keys(mcpFor(chosen[0])).length ? `\nThe GitHub MCP server needs a one-time approval: run /mcp in Claude Code, or just use \`gh\`.` : ""),
+  (Object.keys(mcpFor(chosen[0])).length ? `\nThe GitHub MCP server authenticates by header, not OAuth. Export a token where your agent will see it:\n  export GITHUB_MCP_TOKEN="$(gh auth token)"\nan unset variable reaches GitHub as a literal \${GITHUB_MCP_TOKEN} and comes back HTTP 400. Or skip it and just use \`gh\`.` : ""),
 );
