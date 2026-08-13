@@ -20,13 +20,21 @@ One canonical source compiles out to Claude Code, opencode, Cursor, or plain cop
 
 ## Install
 
-Run this **inside your own project**:
+Install once, for every project on the machine:
+
+```bash
+npx panoply init --global
+```
+
+Or run it **inside a single project** to scope it there:
 
 ```bash
 npx panoply init
 ```
 
-It detects whether you're on Claude Code, opencode, or Cursor, installs the commands there, and stops. It never overwrites a command you wrote yourself.
+Either way it detects whether you're on Claude Code, opencode, or Cursor, installs the commands there, and stops. It never overwrites a command you wrote yourself.
+
+`--global` writes to the user-level directory each agent already merges with your project's — `~/.claude/commands/`, `~/.config/opencode/commands/`, `~/.cursor/commands/` — so the commands are simply there, in every repo, with no per-project step. MCP servers are merged into the matching global config, skipping any server you'd already set up; the previous file is kept alongside as `.panoply-bak`.
 
 In Claude Code you can install it as a plugin instead, which keeps it updatable:
 

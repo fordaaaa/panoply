@@ -1,6 +1,6 @@
 {
   "name": "panoply",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Every skill and MCP server you use, in one place, installable into any AI coding agent. One source, compiled to Claude Code, opencode, Cursor, or copy-paste.",
   "type": "module",
   "license": "MIT",
@@ -40,5 +40,9 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "homepage": "https://github.com/fordaaaa/panoply#readme",
+  "bugs": {
+    "url": "https://github.com/fordaaaa/panoply/issues"
+  }
 }
