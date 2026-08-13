@@ -1,64 +1,46 @@
-## Step 0 — bootstrap (runs once, then never again)
+## Step 0.1 — resolve config
 
-Before doing anything else, check for `.ai-skills/config.md`.
+Read `.panoply/config.md`.
 
-**If it exists**, read it and skip the rest of this step — it holds the user's saved answers (`filing:`, `tracker:`, `autoclose:`). Do not re-ask anything. Proceed to Step 1.
+**If it exists**, use it and say nothing. Do not re-ask. Continue.
 
-**If it's missing**, this is the first time any `ai-skills` command has run in this repo. Do the three sub-steps below, then continue. Keep the whole thing friendly and jargon-free — assume the person may not be technical, and explain any term you can't avoid.
+**If it's missing**, do **not** interrogate the user and do **not** write anything yet. Run in **local mode** for now — report findings on screen, file nothing, commit nothing, push nothing. This is the safe default and it needs no setup.
 
-### 0a — install the commands into this tool
+Only when the user actually asks for something that leaves the working tree — "file these", "open a PR", "track this" — ask the two questions below, then write the config. Setup is earned by intent, never charged up front.
 
-Work out which agent you're running inside and make sure the commands are installed where that tool looks for them, so `/cr-run`, `/cr-fix`, and `/prompt` show up as real slash commands next session:
-
-| If you're running in | Commands belong in | MCP config lives in |
-|---|---|---|
-| Claude Code | `.claude/commands/` | `.mcp.json` (repo root — this path is fixed, it cannot live under `.claude/`) |
-| opencode | `.opencode/commands/` | the `"mcp"` block of `opencode.json` |
-| Cursor | `.cursor/commands/` | `.cursor/mcp.json` |
-| anything else | — | — use `prompts/` by copy-paste |
-
-If this repo has a `build.mjs`, just run `node build.mjs` — it regenerates every target directory from `commands/` and is the supported way to do this. Only hand-copy files if that script is missing.
-
-If the tool you're in already has its directory populated, say nothing and move on. If you had to create it, mention in one line that the commands are now installed and will appear as slash commands after a reload.
-
-### 0b — ask the two setup questions
-
-Offer a choice first (use `AskUserQuestion` if the tool supports it, otherwise ask in plain text):
-
-- **Quick setup (recommended)** — two short questions, then you're done.
-- **I'll configure it myself** — tell them the file lives at `.ai-skills/config.md`, show the format below, write it with the defaults (`filing: high-only`, `tracker: github`, `autoclose: on`), and skip to 0c.
-
-For quick setup, ask one at a time:
-
-1. **"When I find problems in your code, what should I do with them?"**
+1. **"When I find problems, what should I do with them?"**
+   - **Just show me (default)** → `filing: local` — nothing is ever filed, committed, or pushed.
+   - **Only the important ones** → `filing: high-only` — only 🔴 Critical and 🟠 High get filed; the rest are shown but not filed.
    - **File all of them** → `filing: all` — every confirmed finding becomes a tracked issue.
-   - **Only the important ones (recommended)** → `filing: high-only` — only 🔴 Critical and 🟠 High get filed; smaller stuff is shown in the report but not filed.
-   - **Just show me, don't file anything** → `filing: local` — nothing is ever filed, committed, or pushed. You get an on-screen report and can ask for fixes directly in your working tree.
-2. **(skip if they chose "just show me")** **"Once I've fixed something and the tests pass, should I merge it and close it out for you, or stop and let you review?"**
-   - **Merge and close it out (recommended)** → `autoclose: on`
-   - **Open the PR and stop** → `autoclose: off`
+2. *(skip unless they chose a filing mode)* **"Once a fix is verified, should I open the PR and stop, or merge it for you?"**
+   - **Open the PR and stop (default)** → `autoclose: off`
+   - **Merge and close it out** → `autoclose: on` — read them the warning under *auto-merge* below before accepting this.
 
-Tracker defaults to `tracker: github`. Only ask about it if GitHub turns out to be unreachable in 0c and another tracker is actually configured.
+Use `AskUserQuestion` if the host tool supports it; otherwise ask in plain text, one at a time.
 
-### 0c — connect the tracker
+> **Auto-merge warning — say this verbatim before writing `autoclose: on`:**
+> "This lets me squash-merge my own fixes into `<default-branch>` without you looking at them. I only do it when a real test suite exists and passes. If this repo has no tests, I will never auto-merge regardless of this setting."
 
-Skip entirely if they chose `filing: local` — no tracker is needed, and you should not nag about disconnected servers they don't need.
+### Step 0.2 — connect the tracker
 
-Otherwise confirm the tracker actually works before the user hits a failure mid-run:
+Skip entirely in local mode. Never nag about a tracker the user doesn't need.
 
-- **GitHub** — run `gh auth status`. If it reports not-logged-in, say "I need to connect to your GitHub account — this opens a browser window where you log in once," then run `gh auth login` (GitHub.com → HTTPS → Login with a web browser) and re-check. If `gh` isn't installed at all, point them at <https://cli.github.com/> and offer to install it with their package manager.
-- **GitHub MCP server** — if the host tool has a `github` MCP server configured but unauthenticated, trigger its OAuth by making one harmless call (e.g. list issues) and tell the user a browser window will open to approve it once. If the MCP server is missing or misbehaving, fall back to `gh` silently — `gh` is the supported backup path and covers everything these commands need.
+- Run `gh auth status`. If it reports not-logged-in, **tell the user and stop** — do not run `gh auth login` yourself. Say: "Filing needs GitHub access. Run `gh auth login` when you're ready and re-run this." Triggering a browser OAuth flow because someone typed a slash command is surprising; let them choose the moment.
+- If `gh` isn't installed, point at <https://cli.github.com/> and offer to install it with their package manager — after asking.
+- If a `github` MCP server is configured but unauthenticated, say so and let the user approve it via `/mcp`. Do not trigger OAuth by making a silent call. Fall back to `gh` — it covers everything these commands need and is the supported backup path.
 
-### 0d — write the config
+### Step 0.3 — write the config
 
-Create `.ai-skills/config.md`:
+Create `.panoply/config.md`:
 
 ```
-# ai-skills config
-filing: high-only     # all | high-only | local
+# panoply config
+filing: local         # local | high-only | all
 tracker: github       # github
-autoclose: on         # on | off
+autoclose: off        # off | on
 setup-complete: true
 ```
 
-Confirm in one line what you set up and how to change it (edit the file, or just say "reconfigure"). Then continue to Step 1.
+Then add `.panoply/` to the repo's `.gitignore` unless it's already there — these are one person's preferences, and a committed `autoclose: on` silently applies to every collaborator.
+
+Confirm in one line what you set and how to change it (edit the file, or say "reconfigure"). Continue.

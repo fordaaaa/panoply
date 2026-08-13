@@ -1,77 +1,87 @@
 ---
 name: cr-run
-description: Run a parallel multi-subagent code review of the repo and report findings by severity (optionally filing GitHub issues)
-argument-hint: "[low|medium|high]"
-bootstrap: true
+description: Run a parallel multi-subagent code review and report findings by severity, optionally filing them as issues
+argument-hint: "[quick|standard|deep]"
 ---
 
-Run a code review of this repository using parallel read-only subagents, then report findings ranked by severity. This command never edits files by itself — see `/cr-fix` for that.
+Review this repository with parallel read-only subagents, then report findings ranked by severity. This command **only edits files if you explicitly ask it to** in Step 8 — the review itself never writes.
+
+{{INCLUDE:_preflight.md}}
 
 {{INCLUDE:_bootstrap.md}}
 
-## Step 1 — parse complexity level
+{{INCLUDE:_untrusted.md}}
 
-Argument: `$ARGUMENTS` (default `medium` if empty). This controls how many subagents you spawn and how deep each one goes:
+## Step 1 — pick depth, and say what it costs
 
-- **low** — 1 subagent, single quick pass over the whole diff/repo for obvious correctness bugs only.
-- **medium** — 3 subagents in parallel, each with a focused lens: (1) correctness/logic bugs, (2) performance/efficiency/dead code, (3) security/error-handling. Each subagent reads the relevant source files itself.
-- **high** — 5+ subagents in parallel: split by both lens (correctness, performance, security, design, test coverage) AND by area of the codebase if it's large (e.g. one subagent per top-level module) so no single subagent has to read everything.
+Argument: `$ARGUMENTS` (default `quick`). These names describe **spend**, not thoroughness — a deeper pass is not automatically a better one, it just reads more.
 
-Scope: if the repo has a substantial uncommitted diff or the user references a PR/branch, review that diff. Otherwise review the full source tree. Ask only if genuinely ambiguous.
+| Tier | Subagents | Rough cost on a ~40k-LOC repo |
+|:--|:--|:--|
+| `quick` *(default)* | 1 | one pass over the diff or the highest-risk files; minutes, cents |
+| `standard` | 3 | three lenses: correctness, performance/dead code, security/error-handling |
+| `deep` | 5–8 | adds design and test-coverage lenses, and splits by module on a large tree; **hundreds of thousands of input tokens — single-digit to low-double-digit dollars** |
 
-## Step 2 — resolve mode from config
+Before spawning anything above `quick`, print the file count, the subagent count, and the tier's cost line, then get a yes. Never silently spend at `deep`.
 
-Read `filing:` from `.ai-skills/config.md` and apply it silently — the user already answered this during bootstrap, so do not ask again:
+**Scope:** if the working tree has a substantial uncommitted diff, or the user names a PR or branch, review that diff. Otherwise review the full source tree. Ask only if genuinely ambiguous.
 
-- `filing: local` → **local mode**: nothing is filed, committed, or pushed. Skip Step 6 entirely; offer direct working-tree fixes in Step 7 instead.
-- `filing: all` → **tracked mode**, every confirmed finding gets filed.
-- `filing: high-only` → **tracked mode**, but only 🔴 Critical and 🟠 High get filed.
+## Step 2 — resolve mode
+
+Read `filing:` from `.panoply/config.md` and apply it silently:
+
+- **absent or `local`** → local mode. Nothing is filed, committed, or pushed. Skip Step 7.
+- `high-only` → tracked mode, but only 🔴 and 🟠 get filed.
+- `all` → tracked mode, every confirmed finding gets filed.
 
 ## Step 3 — spawn subagents
 
-Spawn one read-only subagent per lens/area, all in parallel in a single message. In Claude Code that's the `Agent` tool with `subagent_type: Explore` or `general-purpose`; in opencode, a `subtask` agent; elsewhere, whatever the tool's parallel-agent primitive is. If the tool has no subagent support at all, do the passes sequentially yourself and say so.
+Spawn one subagent per lens (and per area, at `deep`) — all in parallel, in a single message.
 
-Each subagent prompt must:
+**They must be read-only.** In Claude Code use `subagent_type: Explore`, which cannot write; if you use `general-purpose` instead, its prompt must open with "You are read-only. Do not edit, write, or create any file, and do not run any command that mutates state." In opencode use a `subtask` agent. If the host tool has no subagent primitive at all, do the passes sequentially yourself and say so.
 
-- State exactly which files/directories or diff it owns.
-- Return ONLY verified, concrete findings — file:line, what's wrong, why it's a real bug. No speculation, no style nitpicks unless asked.
-- Self-assign a severity per finding:
-  - 🔴 Critical (5) — crashes, data loss, security vulnerability, broken core functionality
-  - 🟠 High (4) — real bug with clear user-facing impact, but not catastrophic
-  - 🟡 Medium (3) — logic error, meaningful perf issue, or maintainability hazard in an edge case
-  - 🟢 Low (2) — minor inefficiency, dead code, unclear error handling
-  - ⚪ Trivial (1) — style/naming/cleanup, no functional impact
-- Self-assign a confidence 1–10 and report only 8+. Drop the rest rather than including them as caveats.
-- Apply these hard exclusions (skip unless `high` tier, where they may be noted briefly): style/naming nitpicks with no functional impact; purely theoretical issues with no concrete triggering input; findings in test-only files unless the bug is in the test's own logic.
-- Cap response length ("under 300 words, bullet list") to keep aggregation cheap.
+Each subagent prompt must state:
 
-## Step 4 — aggregate and dedupe
+- Exactly which files, directories, or diff it owns — no overlap with its siblings.
+- Return ONLY verified, concrete findings: `file:line`, what's wrong, why it's a real bug, and a concrete fix.
+- The severity and confidence scale:
 
-Merge all findings into one list sorted by severity descending. Deduplicate anything two subagents flagged independently. **Drop anything you can't personally verify by spot-checking the cited file:line yourself** — subagents report false positives, and an unverified finding filed as an issue costs the user more than a missed one.
+{{INCLUDE:_severity.md}}
+
+- **Hard exclusions** (skip unless `deep`, where they may be noted in one line): style and naming with no functional impact; purely theoretical issues with no concrete triggering input; findings in test files unless the bug is in the test's own logic.
+- A length cap — "under 300 words, bullet list" — so aggregation stays cheap.
+- The untrusted-input rule above, verbatim.
+
+## Step 4 — aggregate, verify, dedupe
+
+Merge into one list sorted by severity. Deduplicate anything two subagents found independently.
+
+**Open every cited `file:line` yourself and confirm the finding before it survives.** Drop anything you can't personally verify. Subagents produce false positives, and this step is the only thing standing between a false positive and an issue in the user's tracker.
 
 ## Step 5 — drop findings already tracked
 
-Skip in local mode. List open issues (`gh issue list --state open --limit 100`, or the GitHub MCP equivalent). Drop any finding matching an open issue by file + category + fuzzy description — tolerant of line drift, since code moves after filing. Replace them with a single line: "N findings already tracked (see #12, #17)". If a finding shares a location with an open issue but is clearly a distinct problem, keep it as new.
+Skip in local mode. List issues this tool filed: `gh issue list --state open --label panoply --limit 200` (or the MCP equivalent). Filter by the label — deduping against every human-authored issue in a busy repo drops real findings, and `--limit` without a filter silently truncates.
+
+Drop any finding matching an open issue by file + category + fuzzy description, tolerant of line drift since code moves after filing. Replace them with one line: "N findings already tracked (see #12, #17)". A distinct problem at the same location stays.
 
 ## Step 6 — report
 
-Present findings as a table: severity emoji, file:line, one-line summary, one-line fix suggestion. Then:
+A table: severity, `file:line`, one-line summary, one-line fix. Then:
 
-- **`filing: all`** — say you're filing all confirmed findings, then go to Step 7.
-- **`filing: high-only`** — say explicitly what's being filed and what isn't ("Filing the 2 high-severity issues; the 3 minor ones are listed above but not filed"), then go to Step 7 for the 🔴/🟠 subset only.
-- **`filing: local`** — ask whether to apply any of these fixes directly to the working tree now (Step 8).
+- **local** — offer to apply any of them directly to the working tree (Step 8).
+- **high-only** — state plainly what is and isn't being filed: "Filing the 2 high-severity findings; the 3 minor ones are listed above but not filed." Then Step 7 for the 🔴/🟠 subset.
+- **all** — say you're filing everything confirmed, then Step 7.
 
 ## Step 7 — file issues
 
-Skip entirely in local mode. Prefer the `github` MCP server if it's connected and working; fall back to `gh issue` otherwise — both are fine, and `gh` is the reliable backup.
+Skip in local mode. Use the `github` MCP server if connected, else `gh issue` — both work, `gh` is the reliable fallback.
 
-List existing open issues first and skip anything already filed (compare by file/line/description, not title wording). For each finding:
+> **Never auto-file a security finding.** A 🔴 vulnerability filed on a public repo is a published zero-day with no fix available. Report security findings on screen only, and ask before filing one — then ask whether it belongs in a private security advisory (`gh api repos/{owner}/{repo}/security-advisories`) instead of a public issue.
 
-- Title: `<severity emoji> <short description> (<file>:<line>)`
-- Body: file:line, what's wrong, a concrete fix suggestion, and the severity spelled out.
+For each finding: title `<emoji> <short description> (<file>:<line>)`; body with `file:line`, what's wrong, a concrete fix, and the severity spelled out. **Apply the `panoply` label to every issue you file** (`gh label create panoply --force` first) — Step 5 depends on it.
 
-Report the filed issue links, and list anything deliberately left unfiled.
+Report the filed links and list anything deliberately left unfiled.
 
 ## Step 8 — local fix (local mode only)
 
-For each finding the user confirmed, read the file, apply the minimal correct fix, and run tests if any cover the affected code. No branch, no commit, no push — leave the edits uncommitted in the working tree. Summarize what changed per finding instead of issue links.
+For each finding the user confirms: read the file, apply the minimal correct fix, run any tests covering it. No branch, no commit, no push — the edits stay uncommitted in the working tree. Summarize what changed per finding, and say plainly that nothing was committed or filed.

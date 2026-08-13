@@ -1,8 +1,6 @@
-# Per-repo answers written by the bootstrap step (filing/tracker/autoclose).
-# Consumers of these commands may commit their own; we don't publish ours.
-.ai-skills/
-
-# Map, specs, and debug ledgers written by /map, /spec, /verify, /debug.
+# Per-repo answers written by the bootstrap step (filing/autoclose), plus the
+# map, specs, and debug ledgers the commands write. Consumers may commit their
+# own; we don't publish ours.
 .panoply/
 
 # Local editor/agent state
