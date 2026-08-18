@@ -3,6 +3,32 @@
 All notable changes to this project are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [semver](https://semver.org/).
 
+## [0.3.0] — 2026-08-18
+
+No functional change. First release published through the automated pipeline rather than by hand, and the first to carry a git tag — 0.2.0 went to npm without either.
+
+### Changed
+
+- Version bumped across `package.json`, `.claude-plugin/plugin.json`, and `.claude-plugin/marketplace.json`, which CI holds in lockstep.
+
+## [0.2.0] — 2026-08-13
+
+Published to npm but never tagged or documented; these notes were written after the fact. Global install, and a GitHub MCP server that actually connects.
+
+### Added
+
+- **`npx panoply init --global`** — installs once for every project on the machine, writing to the user-level directory each agent already merges with the project's: `~/.claude/commands/`, `~/.config/opencode/commands/`, `~/.cursor/commands/`. Detection follows the same scope, looking at the home directory instead of the working tree.
+- **Header support in the MCP roster.** `mcp/servers.json` entries can carry a `headers` map, rendered into all three generated configs. `${VAR}` is expanded by the host agent at load time, so no token is ever written into a generated file.
+- **`release.yml`** — publishes to npm on a `v*` tag via trusted publishing over GitHub OIDC. No `NPM_TOKEN` secret exists to leak or rotate, and provenance attestations are automatic. The job refuses to publish if the tag and `package.json` version disagree.
+
+### Changed
+
+- **The GitHub MCP server authenticates with a token, not OAuth.** Its OAuth does not support dynamic client registration, so the in-agent flow fails; the roster now sends `Authorization: Bearer ${GITHUB_MCP_TOKEN}`. Toolset pinning moved from the `?toolsets=` query parameter — silently ignored by the server — to the `X-MCP-Toolsets` header, which actually filters, 44 tools down to 38.
+
+### Fixed
+
+- **User-level MCP configs are written atomically.** `~/.claude.json` is the running app's live state file, not ours, and rewriting it in place risked a reader seeing a half-written file or a bad merge eating untouched settings. The installer now backs up to `.panoply-bak`, writes a sibling temp file, and renames it over the target.
+
 ## [0.1.0] — 2026-08-11
 
 First versioned release. Adds four commands, one-command install, and a safety pass over the two that existed.
