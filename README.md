@@ -4,7 +4,7 @@
 
 ***panoply*** *(n.) — a complete and impressive collection. Also: a full suit of armor.*
 
-**Every skill and MCP server you use, in one place, installable into any agent.**
+**Slash commands and MCP servers for AI agents, written once and compiled everywhere.**
 
 One canonical source compiles out to Claude Code, opencode, Cursor, or plain copy-paste. Seven commands today — a code review that files its own issues, a spec that survives a compacted context, a repo map that stops re-reading the tree, a debug loop that keeps a ledger — and room for whatever you add next.
 
@@ -138,17 +138,14 @@ Two ways this bites you, both surfacing as the same unhelpful `HTTP 400` on conn
 - **The variable isn't set in the launching process.** `${GITHUB_MCP_TOKEN}` is expanded by the agent at load time; unset, it goes out to GitHub as that literal string and comes back `error="invalid_token"`. A shell you opened *before* adding the export won't have it, and neither will a GUI or IDE launch that never sources your shell config. Check with `echo ${#GITHUB_MCP_TOKEN}` — you want `40`, not `0` — and start the agent from a shell that passes.
 - **The token went stale.** `gh auth token` is snapshotted once at shell startup, and `gho_` tokens rotate. A long session can connect fine and then fail to *reconnect* hours later; restart from a fresh shell to re-snapshot. If you'd rather not think about it, use a long-lived fine-grained PAT with `repo` scope instead of the `gh` token.
 
-Three more are available opt-in, because a server you don't use is a permanent tax on your context window:
+Two more ship alongside it, because they earn their context on most repos:
 
-```bash
-npx panoply init --with context7,playwright,sentry
-```
-
-| Server | Why you'd add it |
+| Server | Why it's here |
 |:--|:--|
 | `context7` | version-accurate library docs — stops `/cr-fix` inventing APIs on unfamiliar deps (~400 tokens) |
 | `playwright` | drives a real browser so `/verify` can confirm a UI actually renders (~5k tokens) |
-| `sentry` | turns `/cr-run` severity from a guess into "this throws 400×/day in prod" |
+
+Adding a server you won't always want? A server you don't use is a permanent tax on your context window, so mark it `"profile": "opt-in"` in `mcp/servers.json` and it stays out until you pull it in with `npx panoply init --with <name>`.
 
 All of it comes from one file — [`mcp/servers.json`](mcp/servers.json) — rendered into `.mcp.json`, `.cursor/mcp.json`, and `opencode.json` by the build. Hand-maintaining those three is what let one of them go missing.
 

@@ -28,13 +28,5 @@
     "args": ["-y", "@playwright/mcp@latest"],
     "auth": "none",
     "why": "Drives a real browser so /verify can check a web UI actually renders. ~21 tools (~5k tokens); worth it on repos with a front end."
-  },
-
-  "sentry": {
-    "profile": "opt-in",
-    "transport": "http",
-    "url": "https://mcp.sentry.dev/mcp",
-    "auth": "oauth",
-    "why": "Turns /cr-run severity from a guess into evidence ('this path throws 400x/day in prod'). Only useful on a repo wired to Sentry, so it stays opt-in: enable with `node build.mjs --with sentry`."
   }
 }

@@ -5,14 +5,14 @@
     "url": "https://github.com/fordaaaa"
   },
   "metadata": {
-    "description": "Every skill and MCP server you use, in one place, installable into any AI coding agent. One source, compiled to Claude Code, opencode, Cursor, or copy-paste.",
+    "description": "An arsenal of slash commands and MCP servers for AI agents — written once, compiled to Claude Code, opencode, and Cursor.",
     "version": "0.3.0"
   },
   "plugins": [
     {
       "name": "panoply",
       "source": "./",
-      "description": "Every skill and MCP server you use, in one place, installable into any AI coding agent. One source, compiled to Claude Code, opencode, Cursor, or copy-paste.",
+      "description": "An arsenal of slash commands and MCP servers for AI agents — written once, compiled to Claude Code, opencode, and Cursor.",
       "version": "0.3.0",
       "category": "development"
     }
