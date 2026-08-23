@@ -2,13 +2,12 @@
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
     "github": {
-      "type": "remote",
-      "url": "https://api.githubcopilot.com/mcp/",
-      "enabled": true,
-      "headers": {
-        "Authorization": "Bearer ${GITHUB_MCP_TOKEN}",
-        "X-MCP-Toolsets": "issues,pull_requests,repos"
-      }
+      "type": "local",
+      "command": [
+        "node",
+        "servers/gh/index.mjs"
+      ],
+      "enabled": true
     },
     "context7": {
       "type": "remote",
@@ -18,9 +17,8 @@
     "playwright": {
       "type": "local",
       "command": [
-        "npx",
-        "-y",
-        "@playwright/mcp@latest"
+        "node",
+        "servers/browser/index.mjs"
       ],
       "enabled": true
     }

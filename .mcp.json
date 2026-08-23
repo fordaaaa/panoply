@@ -1,12 +1,11 @@
 {
   "mcpServers": {
     "github": {
-      "type": "http",
-      "url": "https://api.githubcopilot.com/mcp/",
-      "headers": {
-        "Authorization": "Bearer ${GITHUB_MCP_TOKEN}",
-        "X-MCP-Toolsets": "issues,pull_requests,repos"
-      }
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "servers/gh/index.mjs"
+      ]
     },
     "context7": {
       "type": "http",
@@ -14,10 +13,9 @@
     },
     "playwright": {
       "type": "stdio",
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "@playwright/mcp@latest"
+        "servers/browser/index.mjs"
       ]
     }
   }

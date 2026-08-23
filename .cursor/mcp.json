@@ -1,20 +1,18 @@
 {
   "mcpServers": {
     "github": {
-      "url": "https://api.githubcopilot.com/mcp/",
-      "headers": {
-        "Authorization": "Bearer ${GITHUB_MCP_TOKEN}",
-        "X-MCP-Toolsets": "issues,pull_requests,repos"
-      }
+      "command": "node",
+      "args": [
+        "servers/gh/index.mjs"
+      ]
     },
     "context7": {
       "url": "https://mcp.context7.com/mcp"
     },
     "playwright": {
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "@playwright/mcp@latest"
+        "servers/browser/index.mjs"
       ]
     }
   }

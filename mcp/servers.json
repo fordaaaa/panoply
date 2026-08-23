@@ -3,14 +3,11 @@
 
   "github": {
     "profile": "default",
-    "transport": "http",
-    "url": "https://api.githubcopilot.com/mcp/",
-    "auth": "token",
-    "headers": {
-      "Authorization": "Bearer ${GITHUB_MCP_TOKEN}",
-      "X-MCP-Toolsets": "issues,pull_requests,repos"
-    },
-    "why": "/cr-run files issues and /cr-fix opens PRs. This server's OAuth does not support dynamic client registration, so the in-agent OAuth flow fails; a token in the Authorization header is the working path. Toolsets are filtered by the X-MCP-Toolsets header (44 tools -> 38) - the ?toolsets= query param is silently ignored."
+    "transport": "stdio",
+    "command": "node",
+    "args": ["servers/gh/index.mjs"],
+    "auth": "token (GITHUB_MCP_TOKEN env var)",
+    "why": "/cr-run files issues and /cr-fix opens PRs. This server's OAuth does not support dynamic client registration, so the in-agent OAuth flow fails. Our panoply-gh bridge forwards to api.githubcopilot.com with GITHUB_MCP_TOKEN as Bearer and filters toolsets to issues,pull_requests,repos (44 tools -> 38)."
   },
 
   "context7": {
@@ -24,9 +21,18 @@
   "playwright": {
     "profile": "default",
     "transport": "stdio",
-    "command": "npx",
-    "args": ["-y", "@playwright/mcp@latest"],
+    "command": "node",
+    "args": ["servers/browser/index.mjs"],
     "auth": "none",
-    "why": "Drives a real browser so /verify can check a web UI actually renders. ~21 tools (~5k tokens); worth it on repos with a front end."
+    "why": "Drives a real browser so /verify can check a web UI actually renders. Our panoply-browser wrapper pins the profile under ~/.panoply/browser. ~21 tools (~5k tokens); worth it on repos with a front end."
+  },
+
+  "showcase": {
+    "profile": "opt-in",
+    "transport": "stdio",
+    "command": "node",
+    "args": ["servers/showcase/index.mjs"],
+    "auth": "none",
+    "why": "Records screen captures of an agent session with ffmpeg and exports videos to a user-accessible folder. 5 tools, near-zero tokens; opt in when you want session recordings."
   }
 }

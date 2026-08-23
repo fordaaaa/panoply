@@ -1,0 +1,12 @@
+{
+  "name": "panoply-browser",
+  "version": "0.1.0",
+  "description": "Panoply-branded stdio MCP server wrapping @playwright/mcp with a default profile under ~/.panoply/browser",
+  "type": "module",
+  "bin": {
+    "panoply-browser": "./index.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

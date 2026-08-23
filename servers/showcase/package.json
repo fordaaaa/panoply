@@ -1,0 +1,13 @@
+{
+  "name": "panoply-showcase",
+  "version": "0.1.0",
+  "description": "MCP server that records screen capture with ffmpeg and exports videos to a user-accessible folder.",
+  "type": "module",
+  "bin": {
+    "panoply-showcase": "./index.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

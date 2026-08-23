@@ -1,0 +1,12 @@
+{
+  "name": "panoply-gh",
+  "version": "0.1.0",
+  "description": "Panoply-branded local stdio-to-HTTPS MCP bridge for the GitHub hosted MCP server",
+  "type": "module",
+  "bin": {
+    "panoply-gh": "./index.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

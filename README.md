@@ -18,25 +18,25 @@ One canonical source compiles out to Claude Code, opencode, Cursor, or plain cop
 
 ---
 
+## Contents
+
+- [Install](#install)
+- [What you get](#what-you-get)
+- [What it won't do](#what-it-wont-do)
+- [Severity scale](#severity-scale)
+- [Configuration](#configuration)
+- [MCP servers](#mcp-servers)
+- [Contributing](#contributing)
+
 ## Install
 
-Install once, for every project on the machine:
-
 ```bash
-npx panoply init --global
+npx panoply init --global   # every project on the machine
 ```
 
-Or run it **inside a single project** to scope it there:
+Or `npx panoply init` inside one project to scope it there. Either way it detects Claude Code, opencode, or Cursor, installs there, never overwrites a command you wrote yourself, and **configures nothing by default** — everything starts in local mode.
 
-```bash
-npx panoply init
-```
-
-Either way it detects whether you're on Claude Code, opencode, or Cursor, installs the commands there, and stops. It never overwrites a command you wrote yourself.
-
-`--global` writes to the user-level directory each agent already merges with your project's — `~/.claude/commands/`, `~/.config/opencode/commands/`, `~/.cursor/commands/` — so the commands are simply there, in every repo, with no per-project step. MCP servers are merged into the matching global config, skipping any server you'd already set up; the previous file is kept alongside as `.panoply-bak`.
-
-In Claude Code you can install it as a plugin instead, which keeps it updatable:
+In Claude Code you can install as an updatable plugin instead:
 
 ```
 /plugin marketplace add fordaaaa/panoply
@@ -44,8 +44,6 @@ In Claude Code you can install it as a plugin instead, which keeps it updatable:
 ```
 
 Using something else? Open [`prompts/`](prompts/), copy a file, replace `{{ARGUMENTS}}`, paste it in.
-
-**Nothing is configured on install.** Every command starts in local mode — reports on screen, files nothing, touches git never — and asks about anything more only when you first ask for it.
 
 ## What you get
 
@@ -75,27 +73,19 @@ Using something else? Open [`prompts/`](prompts/), copy a file, replace `{{ARGUM
 | **`/debug`** `[symptom]` | Every hypothesis gets a falsifying experiment and a recorded result. Nothing is tested twice. | `.panoply/debug/<slug>.md` |
 | **`/prompt`** `[what you want]` | Compiles a half-formed request into a structured prompt + plan. Runs on the cheapest model, so it costs ~nothing. | a prompt you can edit |
 
-### The idea
+**The idea:** the repo is the memory; context is disposable. Every command writes or reads a durable artifact, so nothing dies when context compacts or you switch tools. They compose through files (`/map` → `/spec` → `/verify`, `/cr-run` → `/cr-fix`) and still work standalone.
 
-**The repo is the memory; context is disposable.** Every command either writes a durable artifact or reads one a sibling wrote. Nothing of value dies when the context window compacts, the session ends, or you switch tools.
-
-They compose through files, not calls — `/map` feeds `/spec`, `/spec` feeds `/verify`, `/cr-run` feeds `/cr-fix` — and each one still works standalone if the file it likes isn't there.
-
-### Make it yours
-
-This is a **collection**, not a fixed product — it's meant to grow into everything you actually use. Drop a markdown file in `commands/`, add a server to `mcp/servers.json`, run `node build.mjs`, and it exists in every agent you work in. No runtime, no plugin API, no rewriting the same prompt in four dialects.
-
-The bar for anything you add is in [CONTRIBUTING.md](CONTRIBUTING.md): it has to beat a plain prompt through *structure* — parallel subagents, a durable artifact, a verification loop, or a cheaper model. Everything else is just a paragraph you could have typed.
+**Make it yours:** drop a markdown file in `commands/` or a server in `mcp/servers.json`, run `node build.mjs`, and it exists in every agent. The bar in [CONTRIBUTING.md](CONTRIBUTING.md): each addition must beat a plain prompt through *structure* — parallel subagents, a durable artifact, a verification loop, or a cheaper model.
 
 ## What it won't do
 
 Worth knowing before you install something that can open pull requests.
 
-- **It won't merge without earning it.** `autoclose` defaults to `off`. Turning it on still requires five conditions to hold at once: a real test suite that covers the change and passes, issues authored by a maintainer, no foreign commits on the branch, and a genuinely mergeable PR. It never passes `--admin` — branch protection exists because someone wanted a human there.
-- **It won't treat your repo as instructions.** Issue bodies, comments, and source text are data. A review that reads an issue and a fix that merges to your default branch is a prompt-injection path straight to production; every command carries an explicit rule against following text it finds. Issue-driven fixes never touch CI config, workflows, lockfiles, or credentials.
-- **It won't publish your vulnerabilities.** Security findings are never auto-filed — a 🔴 filed as a public issue is a zero-day with no fix shipped. You get it on screen, and an offer to open a private advisory.
-- **It won't spend without asking.** `/cr-run deep` is 5–8 subagents reading real source. It prints the file count and cost estimate and waits.
-- **It won't assume.** Not that you have tests, not that your default branch is `main`, not that your working tree is clean, not that `gh` is pointed at the repo you think it is.
+- **Won't merge without earning it.** `autoclose` defaults off; even on, five conditions must hold at once. Never passes `--admin`.
+- **Won't treat your repo as instructions.** Issue bodies and source text are data; fixes never touch CI config, workflows, lockfiles, or credentials.
+- **Won't publish your vulnerabilities.** Security findings stay on screen, with an offer of a private advisory.
+- **Won't spend without asking.** `/cr-run deep` prints a cost estimate and waits.
+- **Won't assume.** Not tests, not `main`, not a clean tree, not where `gh` points.
 
 ## Severity scale
 
@@ -107,7 +97,7 @@ Worth knowing before you install something that can open pull requests.
 | 🟢 | Low | minor inefficiency, dead code, unclear error handling |
 | ⚪ | Trivial | style/naming, no functional impact |
 
-Subagents self-score confidence 1–10 and report only 8+. Then the main thread opens every cited `file:line` and drops anything it can't confirm itself. A false positive in your tracker costs more than a missed bug.
+Subagents self-score confidence 1–10 and report only 8+; every cited `file:line` is then re-checked and unconfirmable findings dropped.
 
 ## Configuration
 
@@ -118,40 +108,38 @@ filing: local         # local | high-only | all
 autoclose: off        # off | on
 ```
 
-`filing: local` is a real escape hatch, not a demo mode: nothing is filed, committed, or pushed, and fixes land uncommitted in your working tree for you to keep or throw away. Say *"reconfigure"* to change any of it, or just edit the file.
+`filing: local` means nothing is filed, committed, or pushed — fixes land uncommitted in your tree. Say *"reconfigure"* or edit the file to change any of it.
 
 ## MCP servers
 
-One server ships on by default — **GitHub**, pinned to the `issues,pull_requests,repos` toolsets. The unpinned server exposes ~90 tools and costs 15–25k tokens of context in every session before you've run anything; pinned, it's 5–7k. **`gh` is the supported fallback** and covers everything these commands need, so nothing breaks if you skip MCP entirely.
+One server ships on by default — **GitHub**, pinned to the `issues,pull_requests,repos` toolsets (~5–7k tokens vs ~15–25k unpinned). **`gh` is the supported fallback**, so skipping MCP entirely breaks nothing.
 
 ### Authenticating the GitHub server
 
-That server's OAuth doesn't support dynamic client registration, so the in-agent OAuth flow fails. Authenticate with a token in the `Authorization` header instead — the generated configs read it from `GITHUB_MCP_TOKEN`:
+The server's OAuth flow doesn't work, so authenticate with a token instead — the generated configs read it from `GITHUB_MCP_TOKEN`:
 
 ```bash
 # ~/.bashrc, or wherever your shell exports live
 command -v gh >/dev/null 2>&1 && export GITHUB_MCP_TOKEN="$(gh auth token)"
 ```
 
-Two ways this bites you, both surfacing as the same unhelpful `HTTP 400` on connect or reconnect:
+Both gotchas surface as an unhelpful `HTTP 400`:
 
-- **The variable isn't set in the launching process.** `${GITHUB_MCP_TOKEN}` is expanded by the agent at load time; unset, it goes out to GitHub as that literal string and comes back `error="invalid_token"`. A shell you opened *before* adding the export won't have it, and neither will a GUI or IDE launch that never sources your shell config. Check with `echo ${#GITHUB_MCP_TOKEN}` — you want `40`, not `0` — and start the agent from a shell that passes.
-- **The token went stale.** `gh auth token` is snapshotted once at shell startup, and `gho_` tokens rotate. A long session can connect fine and then fail to *reconnect* hours later; restart from a fresh shell to re-snapshot. If you'd rather not think about it, use a long-lived fine-grained PAT with `repo` scope instead of the `gh` token.
+- **Variable not set in the launching process.** `${GITHUB_MCP_TOKEN}` is expanded at load time; check with `echo ${#GITHUB_MCP_TOKEN}` — want `40`, not `0`. Launch from a shell that sources your config.
+- **Token went stale.** `gh auth token` is snapshotted at shell startup and rotates; restart fresh, or use a long-lived fine-grained PAT with `repo` scope.
 
-Two more ship alongside it, because they earn their context on most repos:
+Two more ship alongside, because they earn their context on most repos:
 
 | Server | Why it's here |
 |:--|:--|
 | `context7` | version-accurate library docs — stops `/cr-fix` inventing APIs on unfamiliar deps (~400 tokens) |
 | `playwright` | drives a real browser so `/verify` can confirm a UI actually renders (~5k tokens) |
 
-Adding a server you won't always want? A server you don't use is a permanent tax on your context window, so mark it `"profile": "opt-in"` in `mcp/servers.json` and it stays out until you pull it in with `npx panoply init --with <name>`.
-
-All of it comes from one file — [`mcp/servers.json`](mcp/servers.json) — rendered into `.mcp.json`, `.cursor/mcp.json`, and `opencode.json` by the build. Hand-maintaining those three is what let one of them go missing.
+Servers you won't always want get `"profile": "opt-in"` in [`mcp/servers.json`](mcp/servers.json), pulled in later with `npx panoply init --with <name>`. Everything comes from that one file, rendered by the build into `.mcp.json`, `.cursor/mcp.json`, and `opencode.json`.
 
 ## Contributing
 
-Edit **`commands/`** and **`mcp/servers.json`** only; everything else is generated by `node build.mjs`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the house style and the bar a new command has to clear.
+Edit **`commands/`** and **`mcp/servers.json`** only; everything else is generated by `node build.mjs`. See [CONTRIBUTING.md](CONTRIBUTING.md) for the house style.
 
 ```
 commands/                  ← the only files you edit

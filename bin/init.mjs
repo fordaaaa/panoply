@@ -11,6 +11,7 @@
 // Zero dependencies, by design. Nothing here phones home.
 
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, cpSync, renameSync } from "node:fs";
+import { createInterface } from "node:readline/promises";
 import { join, dirname, resolve } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -28,6 +29,7 @@ const USAGE = `Installs the panoply commands into whichever agent this project u
   npx panoply init --all           install for every supported tool
   npx panoply init --with playwright,context7
   npx panoply init --dry-run       show what would happen, write nothing
+  npx panoply init --yes           skip the setup questions
   npx panoply init --help`;
 
 if (argv.includes("--help") || argv.includes("-h")) {
@@ -46,6 +48,44 @@ const has = (name) => argv.includes(`--${name}`);
 const dryRun = has("dry-run");
 const isGlobal = has("global");
 const extras = (flag("with") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+
+// Opt-in servers the onboarding prompt can offer. Kept here (not parsed out of
+// servers.json) so each can carry its own setup question.
+const OPT_IN = {
+  showcase: {
+    label: "panoply-showcase — record/capture videos of your session into an exports folder",
+    ask: async (rl) => {
+      const answer = (await rl.question("  Where should showcase recordings be saved? [~/Videos/panoply] ")).trim();
+      return answer || join(home, "Videos", "panoply");
+    },
+  },
+};
+
+/**
+ * Personalize before anything is written: which opt-in servers to pull in, and
+ * whatever each of those needs to know. Silent when stdin isn't a TTY or
+ * --yes/--with/--dry-run already answered everything — CI keeps working.
+ */
+async function onboard() {
+  if (!process.stdin.isTTY || dryRun || has("yes")) return;
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+
+  console.log("\nA couple of questions before installing — answer, or just press enter to skip:");
+  for (const [name, s] of Object.entries(OPT_IN)) {
+    if (extras.includes(name)) continue;
+    const want = (await rl.question(`\n  Include ${s.label}? [y/N] `)).trim().toLowerCase();
+    if (!["y", "yes"].includes(want)) continue;
+    extras.push(name);
+    const value = await s.ask(rl);
+    if (name === "showcase") {
+      const cfg = join(home, ".panoply", "showcase");
+      mkdirSync(cfg, { recursive: true });
+      writeFileSync(join(cfg, "config.json"), JSON.stringify({ exports_dir: resolve(value.replace(/^~(?=\/|$)/, home)) }, null, 2) + "\n");
+      console.log(`  ✓ saved — recordings will land in ${value}`);
+    }
+  }
+  rl.close();
+}
 
 // Every agent here merges a user-level command dir with the project one, so a
 // global install covers every project without touching any of them. The MCP
@@ -242,6 +282,7 @@ console.log(
     ? `Installing panoply for every project on this machine${dryRun ? "  (dry run — nothing written)" : ""}`
     : `Installing panoply into ${cwd}${dryRun ? "  (dry run — nothing written)" : ""}`,
 );
+await onboard();
 for (const tool of chosen) install(tool);
 
 console.log(
