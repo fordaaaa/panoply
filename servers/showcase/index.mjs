@@ -6,6 +6,7 @@ import { homedir, tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import readline from "node:readline";
+import * as lab from "./lab.mjs";
 
 const CONFIG_FILE = join(homedir(), ".panoply", "showcase", "config.json");
 const SERVER_NAME = "panoply-showcase";
@@ -59,10 +60,39 @@ function whichFFmpeg() {
   });
 }
 
-function startRecording(args = {}) {
+function whichTool(name) {
+  return new Promise((res) => {
+    execFile("which", [name], (err) => res(!err));
+  });
+}
+
+async function waylandRecorder(fps, raw) {
+  if (!process.env.WAYLAND_DISPLAY) return null;
+  for (const [name, args] of [
+    ["wf-recorder", ["-r", String(fps), "-c", "libx264", "-o", raw]],
+    ["gpu-screen-recorder", ["-w", "screen", "-f", String(fps), "-c", "mp4", "-o", raw]],
+  ]) {
+    if (!(await whichTool(name))) continue;
+    const child = spawn(name, name === "wf-recorder" ? ["-r", String(fps), "-c", "libx264", "-f", raw] : args, { stdio: ["ignore", "ignore", "pipe"] });
+    let stderrTail = "";
+    child.stderr.on("data", (c) => { stderrTail = (stderrTail + c).slice(-2000); });
+    recording = {
+      child,
+      rawFile: raw,
+      fps,
+      startedAt: new Date().toISOString(),
+      stderrTail,
+      get tail() { return stderrTail; },
+    };
+    return `Recording started with ${name} at ${fps} fps (Wayland).\nRaw capture: ${raw}\nIt will be saved to the exports folder when you call showcase_stop_recording.`;
+  }
+  return null;
+}
+
+async function startRecording(args = {}) {
   if (recording) return `Already recording since ${recording.startedAt} — call showcase_stop_recording first.`;
   const fps = Number(args.fps) > 0 ? Number(args.fps) : 30;
-  return whichFFmpeg().then((ffmpegPath) => {
+  return whichFFmpeg().then(async (ffmpegPath) => {
     if (!ffmpegPath) {
       return "ffmpeg not found on PATH. Install it first — e.g. `sudo apt install ffmpeg` (Debian/Ubuntu), `brew install ffmpeg` (macOS), or see https://ffmpeg.org/download.html — then retry showcase_start_recording.";
     }
@@ -79,7 +109,9 @@ function startRecording(args = {}) {
         "-framerate", String(fps), "-pix_fmt", "yuv420p", "-y", raw,
       ];
     } else {
-      return `No display found (DISPLAY is unset) — cannot start screen capture in this session. If you are on Wayland, ensure XWayland is available or record via another tool and use showcase_export.`;
+      const wl = await waylandRecorder(fps, raw);
+      if (wl) return wl;
+      return `No display found (DISPLAY is unset${process.env.WAYLAND_DISPLAY ? " and no wf-recorder/gpu-screen-recorder installed for Wayland" : ""}) — cannot start screen capture in this session. For a desktop-independent option that records a containerized browser instead of your screen, call showcase_lab_start.`;
     }
     const child = spawn(ffmpegPath, cmdArgs, { stdio: ["ignore", "ignore", "pipe"] });
     let stderrTail = "";
@@ -223,6 +255,27 @@ const TOOLS = [
       additionalProperties: false,
     },
   },
+  {
+    name: "showcase_lab_start",
+    description: "Start lab mode: a containerized virtual display with chromium (CDP on http://localhost:9222) recorded by ffmpeg. Works regardless of host desktop.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        fps: { type: "number", description: "Recording frame rate (default 30)." },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "showcase_lab_stop",
+    description: "Stop lab mode: finalize the mp4 recording, stop and remove the container. Returns the absolute saved video path.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
+    name: "showcase_lab_status",
+    description: "Show lab mode state: container runtime, whether the lab container runs, its CDP endpoint and output file.",
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
+  },
 ];
 
 function setupTool(args = {}) {
@@ -280,6 +333,12 @@ function handleRequest(id, method, params) {
         return wrap(exportVideo(args));
       case "showcase_setup":
         return wrap(setupTool(args));
+      case "showcase_lab_start":
+        return lab.start({ exportsDir: ensureExportsDir().dir, fps: args.fps }).then(wrap).catch((e) => wrap(e.message, true));
+      case "showcase_lab_stop":
+        return lab.stop().then(wrap).catch((e) => wrap(e.message, true));
+      case "showcase_lab_status":
+        return lab.status().then(wrap).catch((e) => wrap(e.message, true));
       default:
         return wrap(`Unknown tool: ${name}`, true);
     }
