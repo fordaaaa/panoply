@@ -136,7 +136,7 @@ Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*
 |:--|:--|
 | `caveman` | Compresses subagent reports and background/scratch output to a dense, telegraphic register to cut token usage — never the final message shown to you. Self-reports an estimated token reduction so the claim is checkable, not just vibes. |
 
-Off by default for anything user-facing. A hook (`.claude/hooks/caveman-nudge.mjs`) nudges Claude to use it on subagent boundaries; opt into the `caveman` MCP server (`npx panoply init --with caveman`) for a real usage number instead of a heuristic. Widen it to every response with `PANOPLY_CAVEMAN_SCOPE=everywhere` or `.claude/settings.json`'s `caveman.scope` field.
+A hook (`.claude/hooks/caveman-nudge.mjs`) nudges Claude to use it, scoped by `.claude/settings.json`'s `caveman.scope` field (or `PANOPLY_CAVEMAN_SCOPE`, which wins): `everywhere` (default here) compresses all output including the final message to you; `subagent` restricts it to `Task`-boundary traffic only, leaving your chat replies untouched. Opt into the `caveman` MCP server (`npx panoply init --with caveman`) for a real usage number instead of a heuristic.
 
 ## Contributing
 

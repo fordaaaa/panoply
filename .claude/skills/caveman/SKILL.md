@@ -26,9 +26,9 @@ Estimate `N` by comparing the word count of what you wrote against a rough uncom
 
 ## Scope — read before applying
 
-Default scope is **subagent-internal only**:
+Scope is controlled by `.claude/settings.json`'s `caveman.scope` field (or the `PANOPLY_CAVEMAN_SCOPE` env var, which wins) — see `.claude/hooks/caveman-nudge.mjs`.
 
-- **Compress:** the prompt you send into a `Task`/subagent call, a subagent's returned report before it's summarized for the user, and any scratch/status artifact written to disk that isn't meant for a human to read directly (background loop status lines, intermediate findings before aggregation).
-- **Never compress:** the assistant's own top-level chat message — the thing a human, possibly non-technical, actually reads. That always stays normal prose.
+- **`everywhere`** (current default): compress everything — subagent prompts/reports, scratch/status artifacts, and the assistant's own top-level chat message.
+- **`subagent`**: compress only the prompt sent into a `Task`/subagent call, a subagent's returned report before it's summarized for the user, and scratch/status artifacts not meant for direct human reading. Never the top-level chat message.
 
-An operator can widen this to "everywhere" via `PANOPLY_CAVEMAN_SCOPE=everywhere` or `.claude/settings.json`'s `caveman.scope` field — see `.claude/hooks/caveman-nudge.mjs`. If that override is active, the hook will say so; otherwise assume subagent-only.
+Check which mode is active before assuming either way — don't hardcode an assumption here.
