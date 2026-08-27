@@ -1,0 +1,13 @@
+{
+  "name": "panoply-caveman",
+  "version": "0.1.0",
+  "description": "MCP server that reports an approximate usage signal so the caveman-compression hook can react to measured traffic instead of a heuristic.",
+  "type": "module",
+  "bin": {
+    "panoply-caveman": "./index.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

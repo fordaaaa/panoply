@@ -34,5 +34,14 @@
     "args": ["servers/showcase/index.mjs"],
     "auth": "none",
     "why": "Records screen captures of an agent session with ffmpeg and exports videos to a user-accessible folder. 5 tools, near-zero tokens; opt in when you want session recordings."
+  },
+
+  "caveman": {
+    "profile": "opt-in",
+    "transport": "stdio",
+    "command": "node",
+    "args": ["servers/caveman/index.mjs"],
+    "auth": "none",
+    "why": "Gives the caveman-compression hook a real usage number instead of a heuristic. One tool, near-zero tokens; opt in if you want the hook to react to measured usage rather than guessing."
   }
 }

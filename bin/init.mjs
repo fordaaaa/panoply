@@ -59,7 +59,50 @@ const OPT_IN = {
       return answer || join(home, "Videos", "panoply");
     },
   },
+  caveman: {
+    label: "panoply-caveman — approximate usage signal for the caveman-compression hook (no secrets, no network)",
+  },
 };
+
+/**
+ * Best-effort GITHUB_MCP_TOKEN check, shown before install rather than only in
+ * the easy-to-miss trailing message. Read-only (one GET to the GitHub REST
+ * API, not the MCP endpoint) and never blocks install — this is a deliberate,
+ * small exception to this file's "nothing here phones home" rule, made
+ * because catching a stale token here beats a confusing "upstream 400" later.
+ * Runs even under --dry-run/CI since it writes nothing and is purely
+ * informational.
+ */
+async function checkGithubAuth() {
+  let servers;
+  try { servers = JSON.parse(readFileSync(join(pkgRoot, "mcp", "servers.json"), "utf8")); }
+  catch { return; }
+  const willInstall = servers.github && (servers.github.profile === "default" || extras.includes("github"));
+  if (!willInstall) return;
+
+  const token = process.env.GITHUB_MCP_TOKEN;
+  if (!token) {
+    console.log(
+      "\nGITHUB_MCP_TOKEN is not set. The GitHub MCP server authenticates by header, not OAuth:\n" +
+      '  export GITHUB_MCP_TOKEN="$(gh auth token)"\n' +
+      "Set it now, or later — see docs/mcp-auth.md. `gh` itself works either way.",
+    );
+    return;
+  }
+  try {
+    const res = await fetch("https://api.github.com/user", { headers: { Authorization: `Bearer ${token}` } });
+    if (res.ok) {
+      const user = await res.json();
+      console.log(`\n✓ GITHUB_MCP_TOKEN looks valid (authenticated as ${user.login}).`);
+    } else if (res.status === 401) {
+      console.log(
+        '\n✗ GITHUB_MCP_TOKEN looks stale or invalid. Try `export GITHUB_MCP_TOKEN="$(gh auth token)"` again — see docs/mcp-auth.md.',
+      );
+    }
+  } catch {
+    // network hiccup during install should never block it — silently skip
+  }
+}
 
 /**
  * Personalize before anything is written: which opt-in servers to pull in, and
@@ -76,6 +119,7 @@ async function onboard() {
     const want = (await rl.question(`\n  Include ${s.label}? [y/N] `)).trim().toLowerCase();
     if (!["y", "yes"].includes(want)) continue;
     extras.push(name);
+    if (!s.ask) continue;
     const value = await s.ask(rl);
     if (name === "showcase") {
       const cfg = join(home, ".panoply", "showcase");
@@ -283,11 +327,12 @@ console.log(
     : `Installing panoply into ${cwd}${dryRun ? "  (dry run — nothing written)" : ""}`,
 );
 await onboard();
+await checkGithubAuth();
 for (const tool of chosen) install(tool);
 
 console.log(
   `\nDone. Reload your agent and the commands appear as /cr-run, /cr-fix, /map, /spec, /verify, /debug, /prompt` +
   (isGlobal ? ` — in every project, without running this again.` : `.`) +
   `\nNothing is configured yet — the commands run in local mode (report only, no filing, no git) until you ask for more.` +
-  (Object.keys(mcpFor(chosen[0])).length ? `\nThe GitHub MCP server authenticates by header, not OAuth. Export a token where your agent will see it:\n  export GITHUB_MCP_TOKEN="$(gh auth token)"\nan unset variable reaches GitHub as a literal \${GITHUB_MCP_TOKEN} and comes back HTTP 400. Or skip it and just use \`gh\`.` : ""),
+  (Object.keys(mcpFor(chosen[0])).length ? `\nSee docs/mcp-auth.md for authenticating the GitHub MCP server, or skip it and just use \`gh\`.` : ""),
 );

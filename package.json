@@ -15,8 +15,10 @@
   "files": [
     "bin",
     "commands",
+    "skills",
     "prompts",
     "mcp",
+    "servers",
     ".claude",
     ".opencode",
     ".cursor",

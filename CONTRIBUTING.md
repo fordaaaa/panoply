@@ -28,6 +28,21 @@ Use `$ARGUMENTS` for input; the portable target rewrites it to `{{ARGUMENTS}}`. 
 
 **The bar for a new command:** it must do something a plain prompt to the agent doesn't already do well, and it must earn that through *structure* — parallel subagents, a durable artifact on disk, a verification loop, or a cheaper model. "Be careful when you refactor" is not a command. If the entire output is prose in the transcript that dies with the context window, it isn't one either.
 
+## Adding a skill
+
+One directory in `skills/`, e.g. `skills/my-skill/SKILL.md`:
+
+```yaml
+---
+name: my-skill            # must match the directory name
+description: One line, max 200 chars — Claude reads this to decide when to invoke the skill
+---
+```
+
+Skills are Claude-Code-only (opencode and Cursor have no equivalent) — they render only to `.claude/skills/<name>/SKILL.md`, never to `.opencode/`, `.cursor/`, or `prompts/`.
+
+**The bar for a new skill:** the same one commands hold to, applied to prose instead of tool structure — it must leave something checkable behind, not just tell the agent to "be terse" or "be careful." A durable estimate, a self-reported metric, a required output format — something a reader (or the linter) could point at and say whether it held.
+
 ## Adding an MCP server
 
 Add it to `mcp/servers.json` with a `why` — the linter requires one. Every declared server injects its tool definitions into every session, so an unused server is a permanent tax on the user's context.

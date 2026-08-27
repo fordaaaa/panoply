@@ -1,21 +1,24 @@
 #!/usr/bin/env node
 // Generates per-tool command directories and MCP configs from the canonical
-// sources in commands/ and mcp/servers.json.
+// sources in commands/, skills/, and mcp/servers.json.
 //
-// Edit commands/*.md and mcp/servers.json only — everything this script writes
-// is overwritten on the next run.
+// Edit commands/*.md, skills/*/SKILL.md, and mcp/servers.json only —
+// everything this script writes is overwritten on the next run. Skills are
+// Claude-Code-only (no opencode/Cursor equivalent), so they render only to
+// .claude/skills/, not to the other three targets.
 //
 //   node build.mjs                        regenerate all targets
 //   node build.mjs --check                exit 1 if any target is stale (CI)
 //   node build.mjs --lint                 validate canonical sources only
 //   node build.mjs --with playwright,ctx7 also emit these opt-in MCP servers
 
-import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync, existsSync, cpSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(fileURLToPath(import.meta.url));
 const SRC = join(root, "commands");
+const SKILLS_SRC = join(root, "skills");
 const argv = process.argv.slice(2);
 const check = argv.includes("--check");
 const lintOnly = argv.includes("--lint");
@@ -245,6 +248,75 @@ function lint(files) {
   console.log(`lint: ${files.length} command(s) ok`);
 }
 
+// --- skills ------------------------------------------------------------------
+// Skills (SKILL.md, Claude-Code-only — opencode/Cursor have no equivalent) live
+// in skills/<name>/SKILL.md, one directory per skill, optionally with bundled
+// asset files alongside SKILL.md. They render to .claude/skills/<name>/ as a
+// whole-directory copy, not through the flat-file `targets` loop above, which
+// assumes one source file → one destination file per tool.
+
+function loadSkillDirs() {
+  if (!existsSync(SKILLS_SRC)) return [];
+  return readdirSync(SKILLS_SRC, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .sort();
+}
+
+function lintSkills(skillDirs) {
+  let problems = 0;
+  const fail = (msg) => { console.error(`lint: ${msg}`); problems++; };
+
+  for (const name of skillDirs) {
+    const file = join("skills", name, "SKILL.md");
+    const path = join(SKILLS_SRC, name, "SKILL.md");
+    if (!existsSync(path)) { fail(`${file}: missing`); continue; }
+    const { attrs, body } = parse(readFileSync(path, "utf8"), file);
+    if (attrs.name !== name) fail(`${file}: frontmatter name \`${attrs.name}\` does not match the directory name`);
+    if (attrs.description.length > 200) fail(`${file}: description is ${attrs.description.length} chars (max 200)`);
+    if (body.includes(MARKER)) fail(`${file}: contains the generated-file marker — you are editing a build output, not a source`);
+  }
+
+  if (problems) { console.error(`\n${problems} skill lint problem(s)`); process.exit(1); }
+  if (skillDirs.length) console.log(`lint: ${skillDirs.length} skill(s) ok`);
+}
+
+/** Copy skills/<name>/ → .claude/skills/<name>/, banner-stamping SKILL.md so cleanup can find it. */
+function buildSkills(skillDirs) {
+  const dest = join(root, ".claude", "skills");
+  if (existsSync(dest)) {
+    for (const d of readdirSync(dest, { withFileTypes: true })) {
+      if (!d.isDirectory() || skillDirs.includes(d.name)) continue;
+      const marker = join(dest, d.name, "SKILL.md");
+      if (!existsSync(marker) || !readFileSync(marker, "utf8").includes(MARKER)) continue; // not ours
+      if (check) { report(`claude-code-skills/${d.name}`, true); continue; }
+      rmSync(join(dest, d.name), { recursive: true, force: true });
+    }
+  } else if (!check) {
+    mkdirSync(dest, { recursive: true });
+  }
+
+  for (const name of skillDirs) {
+    const src = join(SKILLS_SRC, name);
+    const raw = readFileSync(join(src, "SKILL.md"), "utf8");
+    const { attrs, body } = parse(raw, join("skills", name, "SKILL.md"));
+    const out = `---\n# ${banner(join("skills", name, "SKILL.md"))}\nname: ${attrs.name}\ndescription: ${yamlStr(attrs.description)}\n---\n\n${body}\n`;
+    const outDir = join(dest, name);
+    const outFile = join(outDir, "SKILL.md");
+    const current = existsSync(outFile) ? readFileSync(outFile, "utf8") : null;
+    if (current === out) continue;
+    if (check) { report(`claude-code-skills/${name}`, true); continue; }
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(outFile, out);
+    written++;
+    // Bundled assets alongside SKILL.md (anything that isn't SKILL.md itself).
+    for (const f of readdirSync(src, { withFileTypes: true })) {
+      if (!f.isFile() || f.name === "SKILL.md") continue;
+      cpSync(join(src, f.name), join(outDir, f.name));
+    }
+  }
+}
+
 // --- build -------------------------------------------------------------------
 
 const files = readdirSync(SRC, { withFileTypes: true })
@@ -252,8 +324,10 @@ const files = readdirSync(SRC, { withFileTypes: true })
   .map((d) => d.name)
   .sort();
 if (!files.length) die("commands/ contains no command files");
+const skillDirs = loadSkillDirs();
 
 lint(files);
+lintSkills(skillDirs);
 if (lintOnly) process.exit(0);
 
 let stale = 0;
@@ -294,6 +368,8 @@ for (const target of targets) {
   }
 }
 
+buildSkills(skillDirs);
+
 const servers = loadServers();
 for (const target of mcpTargets) {
   if (!existsSync(dirname(target.file)) && !check) mkdirSync(dirname(target.file), { recursive: true });
@@ -313,6 +389,7 @@ if (check) {
 } else {
   console.log(
     `built ${files.length} command(s) → ${targets.map((t) => t.name).join(", ")}` +
+      `\nskills: ${skillDirs.length ? skillDirs.join(", ") : "none"} → claude-code only` +
       `\nmcp servers: ${names}` +
       `\n${written} file(s) changed`,
   );
