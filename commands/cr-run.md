@@ -22,7 +22,9 @@ Argument: `$ARGUMENTS` (default `quick`). These names describe **spend**, not th
 | `standard` | 3 | three lenses: correctness, performance/dead code, security/error-handling |
 | `deep` | 5–8 | adds design and test-coverage lenses, and splits by module on a large tree; **hundreds of thousands of input tokens — single-digit to low-double-digit dollars** |
 
-Before spawning anything above `quick`, print the file count, the subagent count, and the tier's cost line, then get a yes. Never silently spend at `deep`.
+Before spawning anything above `quick`, count files with `git ls-files | wc -l` (or the diff's file count in diff-scope mode), then print that count, the subagent count, and the tier's cost line, and get a yes. Never silently spend at `deep`.
+
+**Hard ceiling:** if the counted file total for a `deep` run exceeds **1500 files**, do not ask the usual yes/no — refuse outright, state the count, and offer the two real alternatives: scope to a subdirectory or diff, or drop to `standard`. Proceed at `deep` past that ceiling only if the user's message explicitly names a number at or above the count (e.g. "yes, all 2200 files") — a bare "yes" does not clear it. This exists because a one-word confirmation is cheap to give and easy to regret; restating the number back is not.
 
 **Scope:** if the working tree has a substantial uncommitted diff, or the user names a PR or branch, review that diff. Otherwise review the full source tree. Ask only if genuinely ambiguous.
 

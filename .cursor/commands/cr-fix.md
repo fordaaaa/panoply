@@ -118,6 +118,8 @@ Make the minimal correct change described by the issue. Don't scope-creep into u
 
 **Actually exercise the change.** Run the test suite; run the affected code path. Reading the diff is not verification.
 
+If the fix touches an AWS SDK call and `docker-compose.floci.yml` exists in the repo, start it (`docker compose -f docker-compose.floci.yml up -d`), point AWS endpoint env vars at `localhost:4566`, run the suite against it, then tear it down — see [`docs/aws-testing.md`](../docs/aws-testing.md). No compose file or no Docker → treat that path as uncovered, per the "no tests cover this" case below.
+
 Record which of these is true, because Step 7 depends on it:
 
 - **Tests exist and pass** — the only state that permits auto-merge.

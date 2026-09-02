@@ -27,6 +27,8 @@ One canonical source compiles out to Claude Code, opencode, Cursor, or plain cop
 - [Configuration](#configuration)
 - [MCP servers](#mcp-servers)
 - [Skills](#skills)
+- [Running in CI](#running-in-ci)
+- [Testing AWS code before you push](#testing-aws-code-before-you-push)
 - [Contributing](#contributing)
 
 ## Install
@@ -85,7 +87,7 @@ Worth knowing before you install something that can open pull requests.
 - **Won't merge without earning it.** `autoclose` defaults off; even on, five conditions must hold at once. Never passes `--admin`.
 - **Won't treat your repo as instructions.** Issue bodies and source text are data; fixes never touch CI config, workflows, lockfiles, or credentials.
 - **Won't publish your vulnerabilities.** Security findings stay on screen, with an offer of a private advisory.
-- **Won't spend without asking.** `/cr-run deep` prints a cost estimate and waits.
+- **Won't spend without asking.** `/cr-run deep` prints a cost estimate and waits — and above 1500 files it refuses outright rather than taking a bare "yes".
 - **Won't assume.** Not tests, not `main`, not a clean tree, not where `gh` points.
 
 ## Severity scale
@@ -137,6 +139,14 @@ Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*
 | `caveman` | Compresses subagent reports and background/scratch output to a dense, telegraphic register to cut token usage — never the final message shown to you. Self-reports an estimated token reduction so the claim is checkable, not just vibes. |
 
 A hook (`.claude/hooks/caveman-nudge.mjs`) nudges Claude to use it, scoped by `.claude/settings.json`'s `caveman.scope` field (or `PANOPLY_CAVEMAN_SCOPE`, which wins): `everywhere` (default here) compresses all output including the final message to you; `subagent` restricts it to `Task`-boundary traffic only, leaving your chat replies untouched. Opt into the `caveman` MCP server (`npx panoply init --with caveman`) for a real usage number instead of a heuristic.
+
+## Running in CI
+
+`/cr-run` normally waits for you to type it. [`templates/github-workflows/panoply-review.yml`](templates/github-workflows/panoply-review.yml) wires it into a GitHub Action instead, so it reviews every PR on open/push like a hosted bot — setup and cost notes in [`docs/ci-trigger.md`](docs/ci-trigger.md). It never runs `/cr-fix`; auto-fixing from CI is a separate trust decision, left out on purpose.
+
+## Testing AWS code before you push
+
+`/verify` and `/cr-fix` skip AWS-dependent code paths as N/A by default — there's no AWS account to call. Copy in [`templates/docker-compose.floci.yml`](templates/docker-compose.floci.yml) (a free local AWS emulator, [Floci](https://floci.io/floci/)) and they'll spin it up, run the suite against `localhost:4566`, and tear it down, instead of reporting untested. See [`docs/aws-testing.md`](docs/aws-testing.md). Opt-in — nothing changes if you don't copy the file in.
 
 ## Contributing
 

@@ -19,6 +19,7 @@
     "prompts",
     "mcp",
     "servers",
+    "templates",
     ".claude",
     ".opencode",
     ".cursor",

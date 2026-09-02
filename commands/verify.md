@@ -30,6 +30,8 @@ Four read-only subagents, in parallel, in one message. Each returns a verdict of
 
 "I couldn't find a test command" is **N-A, stated loudly**, never a PASS. An unverifiable claim is not a satisfied one.
 
+**AWS-touching diffs:** if the diff calls an AWS SDK and `docker-compose.floci.yml` exists in the repo, the Tests checker starts it (`docker compose -f docker-compose.floci.yml up -d`), points the run's AWS endpoint env vars at `localhost:4566`, runs the suite against it, then tears it down — instead of marking that code path N-A. See [`docs/aws-testing.md`](../docs/aws-testing.md). No Docker or no compose file present → fall back to N-A as before.
+
 ## Step 3 — run the tests yourself
 
 Do not take the Tests checker's word for it. Run the suite in the main thread and paste the real summary line. A subagent reporting "tests pass" is a claim; the exit code is evidence. If tests don't exist, say exactly that — do not substitute reasoning about whether they would pass.

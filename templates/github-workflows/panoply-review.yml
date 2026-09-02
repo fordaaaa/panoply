@@ -1,0 +1,33 @@
+name: panoply review
+
+# Copy this file to .github/workflows/panoply-review.yml in a repo that has
+# panoply installed (npx panoply init). See docs/ci-trigger.md for setup.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    # Skip on draft PRs and on panoply's own fix-branch PRs, so the bot never reviews itself.
+    if: ${{ !github.event.pull_request.draft && !startsWith(github.head_ref, 'codereview-fixes-') }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          prompt: "/cr-run quick"
+          # Bump to "/cr-run standard" once you've watched a few quick runs
+          # and trust the cost. Never set "deep" here — that tier's cost
+          # estimate assumes a human reads it before confirming, which a
+          # CI run can't do; see commands/cr-run.md Step 1's hard ceiling.

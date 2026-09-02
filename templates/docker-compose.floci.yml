@@ -1,0 +1,15 @@
+# Local AWS emulator for testing/debugging AWS-touching code before you push.
+# Copy to the repo root (or merge into an existing docker-compose.yml) and
+# `docker compose -f docker-compose.floci.yml up -d`. See docs/aws-testing.md.
+services:
+  floci:
+    image: floci/floci:latest
+    ports:
+      - "4566:4566" # single edge port for every emulated AWS service
+    environment:
+      - SERVICES=${FLOCI_SERVICES:-s3,dynamodb,sqs,sns,lambda}
+    volumes:
+      - floci-data:/var/lib/floci
+
+volumes:
+  floci-data:
