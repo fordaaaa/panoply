@@ -126,7 +126,7 @@ Two more ship alongside, because they earn their context on most repos:
 | Server | Why it's here |
 |:--|:--|
 | `context7` | version-accurate library docs — stops `/cr-fix` inventing APIs on unfamiliar deps (~400 tokens) |
-| `playwright` | drives a real browser so `/verify` can confirm a UI actually renders (~5k tokens) |
+| `playwright` | drives a real browser so `/verify` can confirm a UI actually renders — or hooks into a live Chrome/Edge via `PANOPLY_BROWSER_CDP` (~5k tokens) |
 
 Servers you won't always want get `"profile": "opt-in"` in [`mcp/servers.json`](mcp/servers.json), pulled in later with `npx panoply init --with <name>`. Everything comes from that one file, rendered by the build into `.mcp.json`, `.cursor/mcp.json`, and `opencode.json`.
 

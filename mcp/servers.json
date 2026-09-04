@@ -24,7 +24,7 @@
     "command": "node",
     "args": ["servers/browser/index.mjs"],
     "auth": "none",
-    "why": "Drives a real browser so /verify can check a web UI actually renders. Our panoply-browser wrapper pins the profile under ~/.panoply/browser. ~21 tools (~5k tokens); worth it on repos with a front end."
+    "why": "Drives a real browser so /verify can check a web UI actually renders. Our panoply-browser wrapper pins the profile under ~/.panoply/browser, or hooks into a live Chrome/Edge with PANOPLY_BROWSER_CDP (--cdp-endpoint). ~21 tools (~5k tokens); worth it on repos with a front end."
   },
 
   "showcase": {

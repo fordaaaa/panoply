@@ -7,7 +7,23 @@ import { homedir } from "node:os";
 const profileDir = process.env.PANOPLY_BROWSER_DIR ?? join(homedir(), ".panoply", "browser");
 mkdirSync(profileDir, { recursive: true });
 
-const child = spawn("npx", ["-y", "@playwright/mcp@latest", "--user-data-dir", profileDir], {
+// Hook into an already-running browser instead of launching our own. Point it
+// at any Chromium-based browser (Chrome/Edge/Brave) started with
+// `--remote-debugging-port=<port>`; the agent then drives your live session —
+// tabs, logins and cookies included — and closing the client won't kill it.
+// `@playwright/mcp` also honors PLAYWRIGHT_MCP_CDP_ENDPOINT directly, since the
+// environment is passed through below.
+const cdpEndpoint = process.env.PANOPLY_BROWSER_CDP;
+
+const args = ["-y", "@playwright/mcp@latest"];
+if (cdpEndpoint) {
+  args.push("--cdp-endpoint", cdpEndpoint);
+  console.error(`panoply-browser: connecting to existing browser at ${cdpEndpoint}`);
+} else {
+  args.push("--user-data-dir", profileDir);
+}
+
+const child = spawn("npx", args, {
   stdio: ["pipe", "pipe", "inherit"],
   env: process.env,
 });
