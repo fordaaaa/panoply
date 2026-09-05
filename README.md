@@ -130,6 +130,8 @@ Two more ship alongside, because they earn their context on most repos:
 
 Servers you won't always want get `"profile": "opt-in"` in [`mcp/servers.json`](mcp/servers.json), pulled in later with `npx panoply init --with <name>`. Everything comes from that one file, rendered by the build into `.mcp.json`, `.cursor/mcp.json`, and `opencode.json`.
 
+For a richer GitHub surface than the default server — Actions workflows + runs, Releases, **Projects v2**, labels, and search, plus a generic `gh_cli` passthrough that can run any `gh` subcommand — pull in the **`gh-cli`** server, which wraps your locally-authenticated `gh` binary with no token forwarding (`npx panoply init --with gh-cli`). See [`servers/gh-cli/README.md`](servers/gh-cli/README.md).
+
 ## Skills
 
 Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*/SKILL.md`, rendered to `.claude/skills/`.

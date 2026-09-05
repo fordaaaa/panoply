@@ -36,12 +36,21 @@
     "why": "Records screen captures of an agent session with ffmpeg and exports videos to a user-accessible folder. 5 tools, near-zero tokens; opt in when you want session recordings."
   },
 
-  "caveman": {
+    "caveman": {
     "profile": "opt-in",
     "transport": "stdio",
     "command": "node",
     "args": ["servers/caveman/index.mjs"],
     "auth": "none",
     "why": "Gives the caveman-compression hook a real usage number instead of a heuristic. One tool, near-zero tokens; opt in if you want the hook to react to measured usage rather than guessing."
+  },
+
+  "gh-cli": {
+    "profile": "opt-in",
+    "transport": "stdio",
+    "command": "node",
+    "args": ["servers/gh-cli/index.mjs"],
+    "auth": "gh auth session (reuse your existing gh login — no token needed)",
+    "why": "The existing panoply-gh server is a thin bridge to the hosted GitHub MCP server, pinned to issues/pull_requests/repos — no Actions, no Projects. panoply-gh-cli wraps the local gh binary instead, so it covers the full CLI surface (Actions workflows + runs, Releases, Projects v2, labels, search) plus a gh_cli passthrough for anything not yet curated, all authenticated through your existing `gh auth` session."
   }
 }

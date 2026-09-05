@@ -59,11 +59,14 @@ const HANDLERS = {
       return (e.stdout?.trim() ? e.stdout.trim() + "\n" : "") + text;
     }),
 
-  gh_repo_view: (p) =>
-    runGh(["repo", "view", ...repoArg(p), "--json", p.json || "name,nameWithOwner,description,defaultBranchRef,url,stargazerCount,forkCount,primaryLanguage,owner,isPrivate,createdAt,pushedAt"]),
+  gh_repo_view: (p) => {
+    // `gh repo view` takes the repo as a positional arg, not -R.
+    const repo = p.repo ? [p.repo] : [];
+    return runGh(["repo", "view", ...repo, "--json", p.json || "name,nameWithOwner,description,defaultBranchRef,url,stargazerCount,forkCount,primaryLanguage,owner,isPrivate,createdAt,pushedAt"]);
+  },
 
   gh_repo_list: (p) =>
-    runGh(["repo", "list", ...repoArg(p), "--limit", String(p.limit || 30), "--json", p.json || "nameWithOwner,description,url,stargazerCount,primaryLanguage"]),
+    runGh(["repo", "list", "--limit", String(p.limit || 30), "--json", p.json || "nameWithOwner,description,url,stargazerCount,primaryLanguage"]),
 
   gh_repo_create: (p) => {
     if (!p.name) return Promise.reject("name is required for gh_repo_create");
@@ -80,7 +83,8 @@ const HANDLERS = {
 
   gh_repo_edit: (p) => {
     if (!p.repo) return Promise.reject("repo is required for gh_repo_edit");
-    const a = ["edit", ...repoArg(p), ...flags({
+    // `gh repo edit` takes repo as positional, not -R.
+    const a = ["edit", p.repo, ...flags({
       description: p.description, homepage: p.homepage,
       "default-branch": p.default_branch, visibility: p.visibility,
     })];
@@ -94,7 +98,7 @@ const HANDLERS = {
 
   gh_repo_delete: (p) => {
     if (!p.repo) return Promise.reject("repo is required for gh_repo_delete");
-    return runGh(["repo", "delete", ...repoArg(p), "--yes"]);
+    return runGh(["repo", "delete", p.repo, "--yes"]);
   },
 
   gh_label_list: (p) => runGh(["label", "list", ...repoArg(p), "--limit", String(p.limit || 30), "--json", "name,color,description"]),
@@ -287,7 +291,7 @@ const HANDLERS = {
     return runGh(["pr", ...a]);
   },
 
-  gh_workflow_list: (p) => runGh(["workflow", "list", ...repoArg(p), "--limit", String(p.limit || 100), "--json", "name,state,path,url"]),
+  gh_workflow_list: (p) => runGh(["workflow", "list", ...repoArg(p), "--limit", String(p.limit || 100), "--json", p.json || "id,name,path,state"]),
 
   gh_workflow_view: (p) => {
     if (!p.name) return Promise.reject("name is required for gh_workflow_view");
@@ -364,7 +368,7 @@ const HANDLERS = {
     return runGh(["run", ...a]);
   },
 
-  gh_release_list: (p) => runGh(["release", "list", ...repoArg(p), "--limit", String(p.limit || 30), "--json", "name,tagName,draft,prerelease,createdAt,publishedAt,url"]),
+  gh_release_list: (p) => runGh(["release", "list", ...repoArg(p), "--limit", String(p.limit || 30), "--json", p.json || "name,tagName,isDraft,isPrerelease,createdAt,publishedAt"]),
 
   gh_release_view: (p) => {
     const a = ["view", ...repoArg(p)];
@@ -400,3 +404,371 @@ const HANDLERS = {
     return runGh(["release", ...a]);
   },
 };
+// --- projects v2 (first-class support — the "bit more") + passthrough ----
+// Appended via Object.assign so the HANDLERS block above stays closed.
+
+Object.assign(HANDLERS, {
+  gh_project_list: (p) => {
+    const a = ["list", "--owner", p.owner || "@me", "--limit", String(p.limit || 50), "--format", "json"];
+    if (p.all) a.push("--closed");
+    return runGh(["project", ...a]);
+  },
+
+  gh_project_view: (p) => {
+    if (!p.number) return Promise.reject("number is required for gh_project_view");
+    return runGh(["project", "view", p.number, "--owner", p.owner || "@me", "--format", "json"]);
+  },
+
+  gh_project_create: (p) => {
+    if (!p.title) return Promise.reject("title is required for gh_project_create");
+    const a = ["create", "--title", p.title, "--owner", p.owner || "@me", "--format", "json"];
+    if (p.public) a.push("--visibility", "PUBLIC");
+    return runGh(["project", ...a]);
+  },
+
+  gh_project_edit: (p) => {
+    if (!p.number) return Promise.reject("number is required for gh_project_edit");
+    const a = ["edit", p.number, "--owner", p.owner || "@me", "--format", "json"];
+    if (p.title) a.push("--title", p.title);
+    if (p.description) a.push("--description", p.description);
+    if (p.readme) a.push("--readme", p.readme);
+    if (p.visibility) a.push("--visibility", p.visibility);
+    return runGh(["project", ...a]);
+  },
+
+  gh_project_field_list: (p) => {
+    if (!p.number) return Promise.reject("number is required for gh_project_field_list");
+    return runGh(["project", "field-list", p.number, "--owner", p.owner || "@me", "--format", "json", "--limit", String(p.limit || 30)]);
+  },
+
+  gh_project_field_create: (p) => {
+    if (!p.number || !p.name || !p.data_type)
+      return Promise.reject("number, name, and data_type are required for gh_project_field_create");
+    const a = ["field-create", p.number, "--owner", p.owner || "@me", "--name", p.name, "--data-type", p.data_type, "--format", "json"];
+    if (p.data_type === "SINGLE_SELECT" && p.single_select_options)
+      a.push("--single-select-options", list(p.single_select_options).join(","));
+    return runGh(["project", ...a]);
+  },
+
+  gh_project_item_list: (p) => {
+    if (!p.number) return Promise.reject("number is required for gh_project_item_list");
+    const a = ["item-list", p.number, "--owner", p.owner || "@me", "--format", "json", "--limit", String(p.limit || 30)];
+    if (p.query) a.push("--query", p.query);
+    return runGh(["project", ...a]);
+  },
+
+  gh_project_item_create: (p) => {
+    if (!p.number || !p.title) return Promise.reject("number and title are required for gh_project_item_create");
+    const a = ["item-create", p.number, "--owner", p.owner || "@me", "--title", p.title, "--format", "json"];
+    if (p.body) a.push("--body", p.body);
+    return runGh(["project", ...a]);
+  },
+
+  gh_project_item_add: (p) => {
+    if (!p.number || !p.url) return Promise.reject("number and url are required for gh_project_item_add");
+    return runGh(["project", "item-add", p.number, "--owner", p.owner || "@me", "--url", p.url, "--format", "json"]);
+  },
+
+  gh_project_item_edit: (p) => {
+    if (!p.id) return Promise.reject("id is required for gh_project_item_edit");
+    const a = ["item-edit", "--owner", p.owner || "@me", "--format", "json", "--id", p.id];
+    if (p.project_id) a.push("--project-id", p.project_id);
+    if (p.field_id) a.push("--field-id", p.field_id);
+    if (p.clear) a.push("--clear");
+    if (p.text !== undefined) a.push("--text", String(p.text));
+    if (p.number_value !== undefined) a.push("--number", String(p.number_value));
+    if (p.date) a.push("--date", p.date);
+    if (p.iteration_id) a.push("--iteration-id", p.iteration_id);
+    if (p.single_select_option_id) a.push("--single-select-option-id", p.single_select_option_id);
+    if (p.title) a.push("--title", p.title);
+    if (p.body) a.push("--body", p.body);
+    return runGh(["project", ...a]);
+  },
+
+  gh_project_item_archive: (p) => {
+    if (!p.number || !p.id) return Promise.reject("number and id are required for gh_project_item_archive");
+    const a = ["item-archive", p.number, "--owner", p.owner || "@me", "--id", p.id, "--format", "json"];
+    if (p.undo) a.push("--undo");
+    return runGh(["project", ...a]);
+  },
+
+  gh_project_item_delete: (p) => {
+    if (!p.number || !p.id) return Promise.reject("number and id are required for gh_project_item_delete");
+    return runGh(["project", "item-delete", p.number, "--owner", p.owner || "@me", "--id", p.id, "--format", "json"]);
+  },
+
+  gh_project_delete: (p) => {
+    if (!p.number) return Promise.reject("number is required for gh_project_delete");
+    return runGh(["project", "delete", p.number, "--owner", p.owner || "@me", "--format", "json"]);
+  },
+
+    // --- raw API passthrough: "everything gh does beyond the curated tools"
+  gh_api: (p) => {
+    if (!p.endpoint) return Promise.reject("endpoint is required for gh_api (e.g. 'repos/owner/repo')");
+    // `gh api` takes the endpoint as a positional path and has NO -R/--repo flag,
+    // so the repo must be encoded in the endpoint path itself.
+    const a = ["api", p.endpoint];
+    if (p.method) a.push("--method", p.method);
+    if (p.header) list(p.header).forEach((h) => a.push("--header", h));
+    if (p.field) list(p.field).forEach((f) => a.push("-F", f));
+    if (p.raw_field) list(p.raw_field).forEach((f) => a.push("-f", f));
+    if (p.per_page) a.push("-F", `per_page=${p.per_page}`);
+    if (p.jq) a.push("--jq", p.jq);
+    if (p.include) a.push("--include");
+    return runGh(a);
+  },
+
+  gh_graphql: (p) => {
+    if (!p.query) return Promise.reject("query is required for gh_graphql");
+    const a = ["api", "graphql", "--method", "POST", "-F", `query=${p.query}`];
+    if (p.field) list(p.field).forEach((f) => a.push("-F", f));
+    return runGh(a);
+  },
+
+  // --- generic gh passthrough: raw CLI args, exactly as typed
+  gh_cli: (p) => {
+    if (!p.args) return Promise.reject("args (array of gh CLI args) is required for gh_cli");
+    const argv = Array.isArray(p.args) ? p.args : [p.args];
+    return runGh(argv);
+  },
+
+    // --- search across GitHub (native gh search subcommands)
+  gh_search_issues: (p) => {
+    const a = ["search", "issues"];
+    if (p.repo) a.push("--repo", p.repo);
+    if (p.state) a.push("--state", p.state);
+    if (p.assignee) a.push("--assignee", p.assignee);
+    if (p.label) list(p.label).forEach((l) => a.push("--label", l));
+        a.push("--json", p.json || "number,title,state,url,repository,author,authorAssociation,createdAt");
+    a.push("--limit", String(p.limit || 30));
+    if (p.query) a.push(p.query);
+    return runGh(a);
+  },
+
+  gh_search_prs: (p) => {
+    const a = ["search", "prs"];
+    if (p.repo) a.push("--repo", p.repo);
+    if (p.state) a.push("--state", p.state);
+    if (p.assignee) a.push("--assignee", p.assignee);
+    if (p.author) a.push("--author", p.author);
+    if (p.head) a.push("--head", p.head);
+    if (p.base) a.push("--base", p.base);
+    a.push("--json", p.json || "number,title,state,url,repository,author,createdAt,isDraft");
+    a.push("--limit", String(p.limit || 30));
+    if (p.query) a.push(p.query);
+    return runGh(a);
+  },
+
+  gh_search_repos: (p) => {
+    const a = ["search", "repos"];
+    if (p.language) a.push("--language", p.language);
+    if (p.stars) a.push("--stars", String(p.stars));
+    a.push("--json", p.json || "fullName,description,stargazersCount,url,language,owner");
+    a.push("--limit", String(p.limit || 30));
+    if (p.query) a.push(p.query);
+    return runGh(a);
+  },
+});
+
+// --- tool schemas (JSON Schema) ---------------------------------------------
+
+const TOOL_SCHEMAS = {
+  gh_auth_status: { type: "object", properties: { hostname: { type: "string", description: "Optional host; omit for all hosts" } }, additionalProperties: false },
+  gh_repo_view: { type: "object", properties: { repo: { type: "string" }, json: { type: "string" } }, additionalProperties: false },
+  gh_repo_list: { type: "object", properties: { limit: { type: "number" }, json: { type: "string" } }, additionalProperties: false },
+  gh_repo_create: { type: "object", properties: { name: { type: "string" }, description: { type: "string" }, visibility: { type: "string" }, license: { type: "string" }, gitignore: { type: "string" }, clone: { type: "boolean" }, template: { type: "boolean" }, source: { type: "string" } }, required: ["name"], additionalProperties: false },
+  gh_repo_edit: { type: "object", properties: { repo: { type: "string" }, description: { type: "string" }, homepage: { type: "string" }, visibility: { type: "string" }, default_branch: { type: "string" }, add_topic: { type: "array", items: { type: "string" } }, remove_topic: { type: "array", items: { type: "string" } }, enable_issues: { type: "boolean" }, enable_projects: { type: "boolean" }, enable_wiki: { type: "boolean" } }, required: ["repo"], additionalProperties: false },
+  gh_repo_delete: { type: "object", properties: { repo: { type: "string" } }, required: ["repo"], additionalProperties: false },
+  gh_label_list: { type: "object", properties: { repo: { type: "string" }, limit: { type: "number" } }, additionalProperties: false },
+  gh_label_create: { type: "object", properties: { repo: { type: "string" }, name: { type: "string" }, color: { type: "string" }, description: { type: "string" }, force: { type: "boolean" } }, required: ["name"], additionalProperties: false },
+  gh_label_edit: { type: "object", properties: { repo: { type: "string" }, name: { type: "string" }, new_name: { type: "string" }, color: { type: "string" }, description: { type: "string" } }, required: ["name"], additionalProperties: false },
+  gh_label_delete: { type: "object", properties: { repo: { type: "string" }, name: { type: "string" } }, required: ["name"], additionalProperties: false },
+  gh_issue_list: { type: "object", properties: { repo: { type: "string" }, limit: { type: "number" }, state: { type: "string" }, assignee: { type: "string" }, author: { type: "string" }, label: { type: "array", items: { type: "string" } }, milestone: { type: "string" }, search: { type: "string" }, json: { type: "string" } }, additionalProperties: false },
+  gh_issue_create: { type: "object", properties: { repo: { type: "string" }, title: { type: "string" }, body: { type: "string" }, body_file: { type: "string" }, assignee: { type: "array", items: { type: "string" } }, label: { type: "array", items: { type: "string" } }, milestone: { type: "string" }, project: { type: "string" } }, required: ["title"], additionalProperties: false },
+  gh_issue_view: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, json: { type: "string" }, comments: { type: "boolean" } }, required: ["number"], additionalProperties: false },
+  gh_issue_edit: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, title: { type: "string" }, body: { type: "string" }, milestone: { type: "string" }, add_assignee: { type: "array", items: { type: "string" } }, remove_assignee: { type: "array", items: { type: "string" } }, add_label: { type: "array", items: { type: "string" } }, remove_label: { type: "array", items: { type: "string" } }, add_blocked_by: { type: "array", items: { type: "string" } }, remove_blocked_by: { type: "array", items: { type: "string" } }, add_blocking: { type: "array", items: { type: "string" } }, remove_blocking: { type: "array", items: { type: "string" } }, remove_milestone: { type: "boolean" }, parent: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_issue_close: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, reason: { type: "string" }, comment: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_issue_reopen: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_issue_comment: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, body: { type: "string" }, body_file: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_issue_delete: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_pr_list: { type: "object", properties: { repo: { type: "string" }, limit: { type: "number" }, state: { type: "string" }, base: { type: "string" }, head: { type: "string" }, assignee: { type: "string" }, author: { type: "string" }, label: { type: "array", items: { type: "string" } }, search: { type: "string" }, json: { type: "string" } }, additionalProperties: false },
+  gh_pr_view: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, json: { type: "string" }, comments: { type: "boolean" }, diff: { type: "boolean" }, web: { type: "boolean" } }, required: ["number"], additionalProperties: false },
+  gh_pr_create: { type: "object", properties: { repo: { type: "string" }, base: { type: "string" }, head: { type: "string" }, title: { type: "string" }, body: { type: "string" }, body_file: { type: "string" }, fill: { type: "boolean" }, fill_first: { type: "boolean" }, draft: { type: "boolean" }, reviewers: { type: "array", items: { type: "string" } }, assignee: { type: "array", items: { type: "string" } }, label: { type: "array", items: { type: "string" } }, milestone: { type: "string" }, project: { type: "string" }, no_maintainer_edit: { type: "boolean" } }, additionalProperties: false },
+  gh_pr_edit: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, base: { type: "string" }, title: { type: "string" }, body: { type: "string" }, body_file: { type: "string" }, milestone: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_pr_merge: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, merge: { type: "boolean" }, squash: { type: "boolean" }, rebase: { type: "boolean" }, delete_branch: { type: "boolean" }, body: { type: "string" }, subject: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_pr_close: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_pr_reopen: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_pr_review: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, approve: { type: "boolean" }, request_changes: { type: "boolean" }, body: { type: "string" }, body_file: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_pr_comment: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, body: { type: "string" }, body_file: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_pr_checkout: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, branch: { type: "string" }, force: { type: "boolean" } }, required: ["number"], additionalProperties: false },
+  gh_pr_checks: { type: "object", properties: { repo: { type: "string" }, number: { type: "string" }, json: { type: "string" }, required: { type: "boolean" }, watch: { type: "boolean" } }, required: ["number"], additionalProperties: false },
+  gh_workflow_list: { type: "object", properties: { repo: { type: "string" }, limit: { type: "number" } }, additionalProperties: false },
+  gh_workflow_view: { type: "object", properties: { repo: { type: "string" }, name: { type: "string" } }, required: ["name"], additionalProperties: false },
+  gh_workflow_run: { type: "object", properties: { repo: { type: "string" }, workflow: { type: "string" }, ref: { type: "string" }, fields: { type: "object" } }, required: ["workflow"], additionalProperties: false },
+  gh_workflow_disable: { type: "object", properties: { repo: { type: "string" }, name: { type: "string" } }, required: ["name"], additionalProperties: false },
+  gh_workflow_enable: { type: "object", properties: { repo: { type: "string" }, name: { type: "string" } }, required: ["name"], additionalProperties: false },
+  gh_run_list: { type: "object", properties: { repo: { type: "string" }, limit: { type: "number" }, branch: { type: "string" }, commit: { type: "string" }, event: { type: "string" }, status: { type: "string" }, user: { type: "string" }, workflow: { type: "string" }, json: { type: "string" } }, additionalProperties: false },
+  gh_run_view: { type: "object", properties: { repo: { type: "string" }, run_id: { type: "string" }, json: { type: "string" }, attempt: { type: "number" }, job: { type: "string" }, verbose: { type: "boolean" }, exit_status: { type: "boolean" } }, required: ["run_id"], additionalProperties: false },
+  gh_run_rerun: { type: "object", properties: { repo: { type: "string" }, run_id: { type: "string" }, job: { type: "string" }, debug: { type: "boolean" } }, required: ["run_id"], additionalProperties: false },
+  gh_run_cancel: { type: "object", properties: { repo: { type: "string" }, run_id: { type: "string" }, force: { type: "boolean" } }, required: ["run_id"], additionalProperties: false },
+  gh_run_watch: { type: "object", properties: { repo: { type: "string" }, run_id: { type: "string" }, interval: { type: "number" } }, required: ["run_id"], additionalProperties: false },
+  gh_run_download: { type: "object", properties: { repo: { type: "string" }, run_id: { type: "string" }, name: { type: "string" }, pattern: { type: "string" }, destination: { type: "string" } }, required: ["run_id"], additionalProperties: false },
+  gh_release_list: { type: "object", properties: { repo: { type: "string" }, limit: { type: "number" } }, additionalProperties: false },
+  gh_release_view: { type: "object", properties: { repo: { type: "string" }, tag: { type: "string" }, json: { type: "string" }, web: { type: "boolean" } }, additionalProperties: false },
+  gh_release_create: { type: "object", properties: { repo: { type: "string" }, tag: { type: "string" }, title: { type: "string" }, notes: { type: "string" }, notes_file: { type: "string" }, target: { type: "string" }, draft: { type: "boolean" }, prerelease: { type: "boolean" }, verify_tag: { type: "boolean" } }, required: ["tag"], additionalProperties: false },
+  gh_release_upload: { type: "object", properties: { repo: { type: "string" }, tag: { type: "string" }, files: { type: "array", items: { type: "string" } }, clobber: { type: "boolean" } }, required: ["tag"], additionalProperties: false },
+  gh_release_delete: { type: "object", properties: { repo: { type: "string" }, tag: { type: "string" }, yes: { type: "boolean" } }, required: ["tag"], additionalProperties: false },
+  gh_project_list: { type: "object", properties: { owner: { type: "string", description: "Default \"@me\"" }, limit: { type: "number" }, all: { type: "boolean", description: "include closed projects" } }, additionalProperties: false },
+  gh_project_view: { type: "object", properties: { number: { type: "string" }, owner: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_project_create: { type: "object", properties: { title: { type: "string" }, owner: { type: "string" }, public: { type: "boolean" } }, required: ["title"], additionalProperties: false },
+  gh_project_edit: { type: "object", properties: { number: { type: "string" }, owner: { type: "string" }, title: { type: "string" }, description: { type: "string" }, readme: { type: "string" }, visibility: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_project_field_list: { type: "object", properties: { number: { type: "string" }, owner: { type: "string" }, limit: { type: "number" } }, required: ["number"], additionalProperties: false },
+  gh_project_field_create: { type: "object", properties: { number: { type: "string" }, owner: { type: "string" }, name: { type: "string" }, data_type: { type: "string", enum: ["TEXT", "SINGLE_SELECT", "DATE", "NUMBER"] }, single_select_options: { type: "array", items: { type: "string" } } }, required: ["number", "name", "data_type"], additionalProperties: false },
+  gh_project_item_list: { type: "object", properties: { number: { type: "string" }, owner: { type: "string" }, query: { type: "string" }, limit: { type: "number" } }, required: ["number"], additionalProperties: false },
+  gh_project_item_create: { type: "object", properties: { number: { type: "string" }, owner: { type: "string" }, title: { type: "string" }, body: { type: "string" } }, required: ["number", "title"], additionalProperties: false },
+  gh_project_item_add: { type: "object", properties: { number: { type: "string" }, owner: { type: "string" }, url: { type: "string" } }, required: ["number", "url"], additionalProperties: false },
+  gh_project_item_edit: { type: "object", properties: { owner: { type: "string" }, id: { type: "string" }, project_id: { type: "string" }, field_id: { type: "string" }, clear: { type: "boolean" }, text: { type: "string" }, number_value: { type: "number" }, date: { type: "string" }, iteration_id: { type: "string" }, single_select_option_id: { type: "string" }, title: { type: "string" }, body: { type: "string" } }, required: ["id"], additionalProperties: false },
+  gh_project_item_archive: { type: "object", properties: { number: { type: "string" }, owner: { type: "string" }, id: { type: "string" }, undo: { type: "boolean" } }, required: ["number", "id"], additionalProperties: false },
+  gh_project_item_delete: { type: "object", properties: { number: { type: "string" }, owner: { type: "string" }, id: { type: "string" } }, required: ["number", "id"], additionalProperties: false },
+  gh_project_delete: { type: "object", properties: { number: { type: "string" }, owner: { type: "string" } }, required: ["number"], additionalProperties: false },
+  gh_api: { type: "object", properties: { repo: { type: "string" }, endpoint: { type: "string" }, method: { type: "string" }, header: { type: "array", items: { type: "string" } }, field: { type: "array", items: { type: "string" } }, raw_field: { type: "array", items: { type: "string" } }, per_page: { type: "number" }, jq: { type: "string" }, include: { type: "boolean" } }, required: ["endpoint"], additionalProperties: false },
+  gh_graphql: { type: "object", properties: { query: { type: "string" }, field: { type: "array", items: { type: "string" } } }, required: ["query"], additionalProperties: false },
+  gh_cli: { type: "object", properties: { args: { type: "array", items: { type: "string" }, description: "raw gh CLI args, e.g. [\"pr\",\"view\",\"1\",\"--json\",\"number,title\"]" } }, required: ["args"], additionalProperties: false },
+    gh_search_issues: { type: "object", properties: { query: { type: "string" }, repo: { type: "string" }, state: { type: "string" }, assignee: { type: "string" }, label: { type: "array", items: { type: "string" } }, limit: { type: "number" }, json: { type: "string" } }, additionalProperties: false },
+  gh_search_prs: { type: "object", properties: { query: { type: "string" }, repo: { type: "string" }, state: { type: "string" }, assignee: { type: "string" }, author: { type: "string" }, head: { type: "string" }, base: { type: "string" }, limit: { type: "number" }, json: { type: "string" } }, additionalProperties: false },
+  gh_search_repos: { type: "object", properties: { query: { type: "string" }, language: { type: "string" }, stars: { type: "number" }, limit: { type: "number" }, json: { type: "string" } }, additionalProperties: false },
+};
+
+const TOOL_DOCS = {
+  gh_auth_status: "Run `gh auth status` — reports the logged-in account and token scopes per host.",
+  gh_repo_view: "Show repository metadata as JSON (defaults to name/stars/description/etc).",
+  gh_repo_list: "List repositories (defaults to yours).",
+  gh_repo_create: "Create a new repository. Supply `name`; other fields optional.",
+  gh_repo_edit: "Edit repository settings (visibility, topics, description, homepage, features).",
+  gh_repo_delete: "Delete a repository by `repo` (OWNER/REPO). Irreversible.",
+  gh_label_list: "List labels on a repo.",
+  gh_label_create: "Create a label (name required; color, description, force optional).",
+  gh_label_edit: "Rename/a recolor/re-describe an existing label.",
+  gh_label_delete: "Delete a label by name.",
+  gh_issue_list: "List issues with filters (state/assignee/label/milestone/search).",
+  gh_issue_create: "Create an issue (title required).",
+  gh_issue_view: "View an issue by number. Pass `comments:true` to include comments.",
+  gh_issue_edit: "Edit an issue (title/body/milestone) and add/remove assignees/labels/links.",
+  gh_issue_close: "Close an issue by number (optional reason + closing comment).",
+  gh_issue_reopen: "Reopen a closed issue by number.",
+  gh_issue_comment: "Add a comment to an issue (body OR body_file required).",
+  gh_issue_delete: "Delete an issue by number.",
+  gh_pr_list: "List pull requests with filters (state/base/head/label/search).",
+  gh_pr_view: "View a PR by number. Pass `diff:true` to get the diff text instead.",
+  gh_pr_create: "Create a pull request (supply base/head/title/body, or use fill:true).",
+  gh_pr_edit: "Edit a PR's base/title/body/milestone.",
+  gh_pr_merge: "Merge a PR — set exactly one of {merge,squash,rebase:true}.",
+  gh_pr_close: "Close a pull request by number.",
+  gh_pr_reopen: "Reopen a pull request by number.",
+  gh_pr_review: "Submit a review: approve, request-changes, or comment.",
+  gh_pr_comment: "Add a comment to a PR.",
+  gh_pr_checkout: "Check out a PR's branch locally.",
+  gh_pr_checks: "Show CI status for a PR. Use `watch:true` to poll until complete.",
+  gh_workflow_list: "List workflow files (hidden ones unless... use limit).",
+  gh_workflow_view: "View a workflow file by name.",
+  gh_workflow_run: "Trigger workflow_dispatch. Pass `fields:{key,val}` for inputs.",
+  gh_workflow_disable: "Disable a workflow by name.",
+  gh_workflow_enable: "Enable a workflow by name.",
+  gh_run_list: "List recent workflow runs with filters (branch/event/status/workflow/user).",
+  gh_run_view: "View a workflow run by database ID.",
+  gh_run_rerun: "Rerun a workflow run (optionally a single job, or with --debug).",
+  gh_run_cancel: "Cancel a workflow run by database ID.",
+  gh_run_watch: "Watch a run live, polling at `interval` seconds.",
+  gh_run_download: "Download artifacts from a run (filter by name/pattern).",
+  gh_release_list: "List releases on a repo.",
+  gh_release_view: "View a release by tag (latest if omitted).",
+  gh_release_create: "Create a release (tag required; notes/notes_file/title/target).",
+  gh_release_upload: "Upload release assets (tag required; files array).",
+  gh_release_delete: "Delete a release tag (yes to skip confirmation).",
+  gh_project_list: "List Projects v2 boards for an owner (default @me).",
+  gh_project_view: "View a Projects v2 board by number as JSON.",
+  gh_project_create: "Create a Projects v2 board (title required; owner, public optional).",
+  gh_project_edit: "Edit a project's title/description/readme/visibility.",
+  gh_project_field_list: "List a project's fields (title, status, etc.) with IDs.",
+  gh_project_field_create: "Add a field to a project: TEXT|SINGLE_SELECT|DATE|NUMBER.",
+  gh_project_item_list: "List items in a project, optionally filtered by query.",
+  gh_project_item_create: "Create a draft issue item in a project (title required).",
+  gh_project_item_add: "Add an existing issue/PR (by url) to a project.",
+  gh_project_item_edit: "Edit a project item's field value (text/number/date/select/iteration/clear/title/body).",
+  gh_project_item_archive: "Archive (or unarchive with undo) an item in a project.",
+  gh_project_item_delete: "Delete an item from a project by ID.",
+  gh_project_delete: "Delete a project by number (owner defaults to @me).",
+  gh_api: "Raw `gh api` passthrough — call any GitHub REST endpoint by path.",
+  gh_graphql: "Run a GraphQL query via `gh api graphql` with typed fields.",
+  gh_cli: "Generic gh passthrough: pass raw CLI args exactly as you'd type them.",
+    gh_search_issues: "Search issues across GitHub via `gh search issues` (supports repo/state/assignee/label/query).",
+  gh_search_prs: "Search pull requests across GitHub via `gh search prs` (supports repo/state/author/head/base/query).",
+  gh_search_repos: "Search repositories across GitHub via `gh search repos` (supports language/stars/query).",
+};
+
+const TOOLS = Object.keys(HANDLERS).map((name) => ({
+  name,
+  description: TOOL_DOCS[name] || `${name} — wraps the gh CLI.`,
+  inputSchema: TOOL_SCHEMAS[name] || { type: "object", properties: {}, additionalProperties: false },
+}));
+
+// --- MCP plumbing (mirrors servers/showcase) --------------------------------
+
+function send(msg) {
+  process.stdout.write(JSON.stringify(msg) + "\n");
+}
+
+function handleRequest(id, method, params) {
+  if (method === "initialize") {
+    return {
+      protocolVersion: params?.protocolVersion ?? "2024-11-05",
+      capabilities: { tools: {} },
+      serverInfo: { name: SERVER_NAME, version: SERVER_VERSION },
+    };
+  }
+  if (method === "notifications/initialized") return undefined;
+  if (method === "ping") return {};
+  if (method === "tools/list") return { tools: TOOLS };
+  if (method === "tools/call") {
+    const name = params?.name ?? "";
+    const args = params?.arguments ?? {};
+    const wrap = (text, isError = false) => ({ content: [{ type: "text", text }], isError });
+    const handler = HANDLERS[name];
+    if (!handler) return wrap(`Unknown tool: ${name}`, true);
+    return handler(args)
+      .then((out) => wrap(out))
+      .catch((e) => wrap(typeof e === "string" ? e : (e?.message ?? e?.stderr ?? JSON.stringify(e)), true));
+  }
+  return Promise.reject(new Error(`Method not found: ${method}`));
+}
+
+const rl = readline.createInterface({ input: process.stdin, terminal: false });
+let chain = Promise.resolve();
+rl.on("line", (line) => {
+  const trimmed = line.trim();
+  if (!trimmed) return;
+  let msg;
+  try { msg = JSON.parse(trimmed); }
+  catch {
+    send({ jsonrpc: "2.0", id: null, error: { code: -32700, message: "Parse error" } });
+    return;
+  }
+  chain = chain
+    .then(() => handleRequest(msg.id, msg.method, msg.params))
+    .then((result) => {
+      if (msg.id !== undefined && result !== undefined) {
+        send({ jsonrpc: "2.0", id: msg.id, result });
+      }
+    })
+    .catch((e) => {
+      if (msg.id !== undefined) {
+        send({
+          jsonrpc: "2.0",
+          id: msg.id,
+          error: { code: e.message?.startsWith("Method not found") ? -32601 : -32603, message: e.message },
+        });
+      }
+    });
+});
+
+for (const sig of ["SIGINT", "SIGTERM"]) process.on(sig, () => process.exit(0));
