@@ -1,0 +1,13 @@
+{
+  "name": "panoply-gh-cli",
+  "version": "0.1.0",
+  "description": "Panoply's MCP server wrapping the local gh CLI — repos, issues, PRs, Actions, Releases, Projects v2, plus raw gh api/ghql passthrough. Zero dependencies.",
+  "type": "module",
+  "bin": {
+    "panoply-gh-cli": "./index.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
