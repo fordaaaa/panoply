@@ -6,7 +6,7 @@
 
 **Slash commands and MCP servers for AI agents, written once and compiled everywhere.**
 
-One canonical source compiles out to Claude Code, opencode, Cursor, or plain copy-paste. Seven commands today — a code review that files its own issues, a spec that survives a compacted context, a repo map that stops re-reading the tree, a debug loop that keeps a ledger — and room for whatever you add next.
+One canonical source compiles out to Claude Code, opencode, Cursor, or plain copy-paste. Twelve commands today — a code review that files its own issues, a spec that survives a compacted context, a repo map that stops re-reading the tree, a debug loop that keeps a ledger, plus onboarding, handoffs, commits, test generation, and CI fixes — and room for whatever you add next.
 
 [![License](https://img.shields.io/github/license/fordaaaa/panoply?style=flat-square&color=4c9a2a&labelColor=1c1c1c)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/fordaaaa/panoply?style=flat-square&logo=github&color=f5c542&labelColor=1c1c1c)](https://github.com/fordaaaa/panoply/stargazers)
@@ -66,15 +66,37 @@ Using something else? Open [`prompts/`](prompts/), copy a file, replace `{{ARGUM
   Local mode: nothing filed. Want me to fix any of these, or start filing?
 ```
 
+### Review
+
 | Command | What it does | What it leaves behind |
 |:--|:--|:--|
 | **`/cr-run`** `[quick\|standard\|deep]` | Parallel read-only subagents review your code. Every finding is re-verified against the actual file before it survives. | GitHub issues, or an on-screen report |
 | **`/cr-fix`** `<issue#…\|all>` | Fixes filed issues on one branch, proves the fix by running it, opens a PR. **This one edits code.** | a branch, commits, a PR |
+
+### Plan, verify, debug
+
+| Command | What it does | What it leaves behind |
+|:--|:--|:--|
 | **`/map`** `[refresh]` | Parallel subagents map the repo once, stamped with the commit. Refreshes only what moved. | `.panoply/map.md` |
 | **`/spec`** `[what you want \| resume]` | Turns a request into acceptance criteria + a checklist, then works it one task at a time, ticking boxes on disk. | `.panoply/specs/<slug>.md` |
 | **`/verify`** `[spec-slug \| diff]` | Grades the diff against criteria written *before* the work, with four parallel checkers. Runs the suite itself. | a verdict in the spec |
 | **`/debug`** `[symptom]` | Every hypothesis gets a falsifying experiment and a recorded result. Nothing is tested twice. | `.panoply/debug/<slug>.md` |
 | **`/prompt`** `[what you want]` | Compiles a half-formed request into a structured prompt + plan. Runs on the cheapest model, so it costs ~nothing. | a prompt you can edit |
+
+### Ship
+
+| Command | What it does | What it leaves behind |
+|:--|:--|:--|
+| **`/commit`** `[<files…>]` | Verifies the diff with the repo's own checks, then commits on the current branch. Never pushes. | a local commit |
+| **`/test-gen`** `[<files…>\|diff]` | Finds changed lines with no coverage, generates tests in the repo's framework, proves them green. | new test files |
+| **`/ci-fix`** `[<run-id\|pr>]` | Pulls the failing Actions logs, reproduces locally, fixes minimally. Never touches workflows. | uncommitted fix |
+
+### Orient
+
+| Command | What it does | What it leaves behind |
+|:--|:--|:--|
+| **`/onboard`** `[<path>]` | Lands in an unfamiliar repo, reuses `/map`, detects the real stack, records verified build/test commands. | `.panoply/onboard.md` |
+| **`/handoff`** `[save\|resume\|status]` | Snapshots branch, diff, open items, and next actions so a compacted session resumes clean. | `.panoply/handoff.md` |
 
 **The idea:** the repo is the memory; context is disposable. Every command writes or reads a durable artifact, so nothing dies when context compacts or you switch tools. They compose through files (`/map` → `/spec` → `/verify`, `/cr-run` → `/cr-fix`) and still work standalone.
 
@@ -138,6 +160,7 @@ Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*
 
 | Skill | What it does |
 |:--|:--|
+| `polyglot` | Detects the stack in the touched files (Python, Go, Rust, Node, Java, Docker) and names the right build/test/lint commands. `/commit`, `/test-gen`, and `/ci-fix` lean on it instead of assuming a runner. Ends every verification with a checkable `[polyglot: …]` report line. |
 | `caveman` | Compresses subagent reports and background/scratch output to a dense, telegraphic register to cut token usage — never the final message shown to you. Self-reports an estimated token reduction so the claim is checkable, not just vibes. |
 
 A hook (`.claude/hooks/caveman-nudge.mjs`) nudges Claude to use it, scoped by `.claude/settings.json`'s `caveman.scope` field (or `PANOPLY_CAVEMAN_SCOPE`, which wins): `everywhere` (default here) compresses all output including the final message to you; `subagent` restricts it to `Task`-boundary traffic only, leaving your chat replies untouched. Opt into the `caveman` MCP server (`npx panoply init --with caveman`) for a real usage number instead of a heuristic.
@@ -160,9 +183,15 @@ commands/                  ← the only files you edit
 ├── _preflight.md
 ├── _severity.md
 ├── _untrusted.md
-└── cr-run.md, cr-fix.md, map.md, spec.md, verify.md, debug.md, prompt.md
+└── cr-run.md, cr-fix.md         ← review
+    map.md, spec.md, verify.md,  ← plan, verify, debug
+    debug.md, prompt.md
+    commit.md, test-gen.md,      ← ship
+    ci-fix.md
+    onboard.md, handoff.md       ← orient
 
-skills/caveman/SKILL.md    ← Claude-Code-only, no opencode/Cursor equivalent
+skills/*/SKILL.md          ← Claude-Code-only, no opencode/Cursor equivalent
+  (caveman, polyglot)
       │
       │   node build.mjs
       ▼
