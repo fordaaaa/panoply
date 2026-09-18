@@ -1,0 +1,80 @@
+---
+name: onboard
+description: Map an unfamiliar repo and record how to build, test, and run it, so the next session starts warm
+argument-hint: "[<path>]"
+---
+
+Land in a repo you have never seen and leave behind `.panoply/onboard.md` — the note your next session wishes it had. Built for jumping between repos: it reuses `/map` instead of re-deriving the shape, detects the actual stack from manifests, and records only commands you verified exist.
+
+Argument: `$ARGUMENTS` — empty means the current directory, a path scopes to that subtree.
+
+{{INCLUDE:_untrusted.md}}
+
+## Step 1 — reuse the map
+
+Read `.panoply/map.md` if it exists and check its `sha:` against HEAD (`git rev-parse HEAD` inside a git repo; if not a git repo, treat the map as stale but continue read-only).
+
+- **Map current** → use it as the area list. Say so in one line.
+- **Map missing or stale** → say so and run `/map` first (or `/map <path>` when scoped). Do not re-derive the tree by hand — that duplicates the map's job at higher cost.
+
+## Step 2 — detect the stack from evidence
+
+Read manifests, never guess. Check in this order and record only what you find:
+
+| Signal | Stack |
+|:--|:--|
+| `pyproject.toml`, `setup.cfg`, `requirements*.txt`, `.venv` | Python (`pytest`, `ruff`/`mypy` if configured) |
+| `go.mod` | Go (`go build ./...`, `go test ./...`) |
+| `Cargo.toml` | Rust (`cargo test`) |
+| `package.json` (`scripts.test`, `scripts.lint`, `scripts.build`) | Node/TypeScript (`npm`/`pnpm`/`yarn` — read `packageManager` field, never assume `npm`) |
+| `pom.xml`, `build.gradle*` | Java (`mvn -q test`, `./gradlew test`) |
+| `Dockerfile`, `compose*.yml`, `docker-compose*.yml` | Docker present (note only — do not build images unasked) |
+
+If two or more stacks appear, it is a polyglot repo — record each area's stack separately. If none appear, say so explicitly; an "unknown stack" is a finding, not a failure.
+
+## Step 3 — probe the commands cheaply
+
+For each detected stack, resolve the build/test/lint commands from the manifest (see the `polyglot` skill for the matrix). Then verify each command exists with the cheapest possible probe (`--version`, `--help`, or `ls` on the wrapper script). Do **not** run the full suite — onboarding that takes twenty minutes is not onboarding.
+
+Record three states per command: **verified** (ran the probe), **declared** (in the manifest, probe failed — quote the error), **absent** (no such script). Never present a declared command as verified.
+
+## Step 4 — write the artifact
+
+Write `.panoply/onboard.md`:
+
+```
+---
+sha: <full HEAD sha, or "no-git-repo">
+built: <ISO date>
+stacks: <e.g. python, go>
+---
+
+# Onboarding — <repo name>
+
+## What this is
+<2–3 sentences: what the repo does, who it serves>
+
+## Layout
+| Area | Purpose | Start here |
+|:--|:--|:--|
+| ... | ... | `path/to/entry` |
+
+## Stacks
+- `<area>`: <stack> — <toolchain + version probe output>
+
+## Commands (verified | declared | absent)
+- build: `<cmd>` (verified)
+- test: `<cmd>` (declared — `...` failed with `...`)
+- lint: `<cmd>` (absent)
+
+## Gotchas
+- <non-obvious coupling, generated dirs, required env vars, services>
+```
+
+Keep it under 150 lines. If it is longer, the map already covers the detail — link to it instead of duplicating it.
+
+## Step 5 — report
+
+Say what is runnable right now, what is missing (toolchain, env var, service), and which file holds the note. Suggest the next command by name (`/spec`, `/test-gen`, `/cr-run`) without running it.
+
+This command will not install toolchains, will not run the full test suite, will not start containers or services, and will not commit anything.
