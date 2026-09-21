@@ -52,5 +52,14 @@
     "args": ["servers/gh-cli/index.mjs"],
     "auth": "gh auth session (reuse your existing gh login — no token needed)",
     "why": "The existing panoply-gh server is a thin bridge to the hosted GitHub MCP server, pinned to issues/pull_requests/repos — no Actions, no Projects. panoply-gh-cli wraps the local gh binary instead, so it covers the full CLI surface (Actions workflows + runs, Releases, Projects v2, labels, search) plus a gh_cli passthrough for anything not yet curated, all authenticated through your existing `gh auth` session."
+  },
+
+  "opencode-bridge": {
+    "profile": "opt-in",
+    "transport": "stdio",
+    "command": "node",
+    "args": ["servers/opencode-bridge/index.mjs"],
+    "auth": "opencode CLI login (reuse your existing `opencode auth` session — no token needed)",
+    "why": "Delegates prompts to your local opencode CLI as a tool (ask_opencode, list_opencode_models, zen_chat) with your own login and quota. Opt in when you want a second agent's loop, agents, or free-tier models inside the current session; 3 tools, zero deps."
   }
 }
