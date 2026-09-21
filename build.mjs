@@ -1,11 +1,15 @@
 #!/usr/bin/env node
 // Generates per-tool command directories and MCP configs from the canonical
-// sources in commands/, skills/, and mcp/servers.json.
+// sources in commands/, skills/, agents/, and mcp/servers.json.
 //
-// Edit commands/*.md, skills/*/SKILL.md, and mcp/servers.json only —
-// everything this script writes is overwritten on the next run. Skills are
-// Claude-Code-only (no opencode/Cursor equivalent), so they render only to
-// .claude/skills/, not to the other three targets.
+// Edit commands/*.md, skills/*/SKILL.md, agents/*.md, and mcp/servers.json
+// only — everything this script writes is overwritten on the next run. Skills
+// are Claude-Code-only (no opencode/Cursor equivalent), so they render only to
+// .claude/skills/, not to the other three targets. Agents (plan/build modes
+// with their own per-message prompt) are opencode-only, so they render only
+// into the `agent` block of opencode.json. Frontmatter carries mode, model,
+// temperature, tools, and permission; tools/permission are inline JSON objects
+// because this file's frontmatter parser is flat `key: value` only.
 //
 //   node build.mjs                        regenerate all targets
 //   node build.mjs --check                exit 1 if any target is stale (CI)
@@ -19,6 +23,7 @@ import { fileURLToPath } from "node:url";
 const root = dirname(fileURLToPath(import.meta.url));
 const SRC = join(root, "commands");
 const SKILLS_SRC = join(root, "skills");
+const AGENTS_SRC = join(root, "agents");
 const argv = process.argv.slice(2);
 const check = argv.includes("--check");
 const lintOnly = argv.includes("--lint");
@@ -177,9 +182,12 @@ const mcpTargets = [
   {
     name: "opencode-mcp",
     file: join(root, "opencode.json"),
-    // opencode.json is a full user-facing config file, so patch the `mcp` key
-    // in place and preserve everything else the user has put there.
-    render: (servers, current) => {
+    // opencode.json is a full user-facing config file, so patch the `mcp` and
+    // `agent` keys in place and preserve everything else the user has put
+    // there. Canonical agents win on name collision (they are generated);
+    // agent names we do not know are left alone, exactly like MCP servers
+    // the user configured themselves.
+    render: (servers, current, canonicalAgents) => {
       const base = current ? JSON.parse(current) : { $schema: "https://opencode.ai/config.json" };
       const mcp = {};
       for (const [n, s] of Object.entries(servers)) {
@@ -189,6 +197,9 @@ const mcpTargets = [
           : { type: "remote", url: s.url, enabled: true, ...hdrs(s) };
       }
       base.mcp = mcp;
+      if (canonicalAgents && Object.keys(canonicalAgents).length) {
+        base.agent = { ...(base.agent ?? {}), ...canonicalAgents };
+      }
       return JSON.stringify(base, null, 2) + "\n";
     },
   },
@@ -317,6 +328,101 @@ function buildSkills(skillDirs) {
   }
 }
 
+// --- agents ------------------------------------------------------------------
+// Agents (opencode-only — Claude Code/Cursor have no `agent`-block
+// equivalent) live in agents/<name>.md: frontmatter carries the opencode
+// agent fields, the body is the per-message system prompt. They render into
+// the `agent` block of opencode.json, merged over (never instead of) whatever
+// agent names the user already has there.
+
+const AGENT_MODES = ["primary", "subagent", "all"];
+
+/** Decode an inline-JSON frontmatter field into an object. Dies on misuse. */
+function jsonField(attrs, file, key) {
+  const raw = attrs[key];
+  if (raw === undefined) return undefined;
+  if (!/^[{[]/.test(raw)) die(`${file}: \`${key}\` must be an inline JSON object, e.g. \`{"edit": "deny"}\``);
+  let val;
+  try { val = JSON.parse(raw); }
+  catch { die(`${file}: \`${key}\` is not valid JSON`); }
+  if (val === null || typeof val !== "object" || Array.isArray(val)) {
+    die(`${file}: \`${key}\` must be a JSON object, not an array or scalar`);
+  }
+  return val;
+}
+
+function loadAgentFiles() {
+  if (!existsSync(AGENTS_SRC)) return [];
+  return readdirSync(AGENTS_SRC, { withFileTypes: true })
+    .filter((d) => d.isFile() && d.name.endsWith(".md") && !d.name.startsWith("_"))
+    .map((d) => d.name)
+    .sort();
+}
+
+function lintAgents(agentFiles) {
+  let problems = 0;
+  const fail = (msg) => { console.error(`lint: ${msg}`); problems++; };
+
+  for (const file of agentFiles) {
+    const raw = readFileSync(join(AGENTS_SRC, file), "utf8");
+    const { attrs, body } = parse(raw, file);
+    const name = file.replace(/\.md$/, "");
+
+    if (attrs.name !== name) {
+      fail(`${file}: frontmatter name \`${attrs.name}\` does not match the filename`);
+    }
+    if (attrs.description.length > 200) {
+      fail(`${file}: description is ${attrs.description.length} chars (max 200)`);
+    }
+    if (!AGENT_MODES.includes(attrs.mode)) {
+      fail(`${file}: mode \`${attrs.mode ?? "(missing)"}\` must be one of: ${AGENT_MODES.join(", ")}`);
+    }
+    if (attrs.model !== undefined && !String(attrs.model).trim()) {
+      fail(`${file}: model is present but empty`);
+    }
+    if (attrs.temperature !== undefined) {
+      const t = Number(attrs.temperature);
+      if (!Number.isFinite(t) || t < 0 || t > 1) {
+        fail(`${file}: temperature \`${attrs.temperature}\` must be a number between 0 and 1`);
+      }
+    }
+    // Decodes tools/permission and dies on invalid JSON.
+    jsonField(attrs, file, "tools");
+    jsonField(attrs, file, "permission");
+    if (!body.trim()) {
+      fail(`${file}: body is empty — the body is the agent's system prompt`);
+    }
+    if (body.includes("$ARGUMENTS") || body.includes("{{ARGUMENTS}}")) {
+      fail(`${file}: agents take no arguments — remove $ARGUMENTS`);
+    }
+    if (body.includes(MARKER)) {
+      fail(`${file}: contains the generated-file marker — you are editing a build output, not a source`);
+    }
+  }
+
+  if (problems) { console.error(`\n${problems} agent lint problem(s)`); process.exit(1); }
+  if (agentFiles.length) console.log(`lint: ${agentFiles.length} agent(s) ok`);
+}
+
+/** Build the canonical `agent` block for opencode.json. */
+function buildAgents(agentFiles) {
+  const out = {};
+  for (const file of agentFiles) {
+    const name = file.replace(/\.md$/, "");
+    const { attrs, body } = parse(readFileSync(join(AGENTS_SRC, file), "utf8"), file);
+    const entry = { description: attrs.description, mode: attrs.mode };
+    if (attrs.model !== undefined) entry.model = String(attrs.model).trim();
+    if (attrs.temperature !== undefined) entry.temperature = Number(attrs.temperature);
+    const tools = jsonField(attrs, file, "tools");
+    if (tools !== undefined) entry.tools = tools;
+    const permission = jsonField(attrs, file, "permission");
+    if (permission !== undefined) entry.permission = permission;
+    entry.prompt = body;
+    out[name] = entry;
+  }
+  return out;
+}
+
 // --- build -------------------------------------------------------------------
 
 const files = readdirSync(SRC, { withFileTypes: true })
@@ -325,9 +431,11 @@ const files = readdirSync(SRC, { withFileTypes: true })
   .sort();
 if (!files.length) die("commands/ contains no command files");
 const skillDirs = loadSkillDirs();
+const agentFiles = loadAgentFiles();
 
 lint(files);
 lintSkills(skillDirs);
+lintAgents(agentFiles);
 if (lintOnly) process.exit(0);
 
 let stale = 0;
@@ -370,11 +478,13 @@ for (const target of targets) {
 
 buildSkills(skillDirs);
 
+const canonicalAgents = buildAgents(agentFiles);
+
 const servers = loadServers();
 for (const target of mcpTargets) {
   if (!existsSync(dirname(target.file)) && !check) mkdirSync(dirname(target.file), { recursive: true });
   const current = existsSync(target.file) ? readFileSync(target.file, "utf8") : null;
-  const out = target.render(servers, current);
+  const out = target.render(servers, current, canonicalAgents);
   if (current === out) continue;
   if (check) { report(target.name, true); continue; }
   writeFileSync(target.file, out);
@@ -390,6 +500,7 @@ if (check) {
   console.log(
     `built ${files.length} command(s) → ${targets.map((t) => t.name).join(", ")}` +
       `\nskills: ${skillDirs.length ? skillDirs.join(", ") : "none"} → claude-code only` +
+      `\nagents: ${agentFiles.length ? agentFiles.map((f) => f.replace(/\.md$/, "")).join(", ") : "none"} → opencode only` +
       `\nmcp servers: ${names}` +
       `\n${written} file(s) changed`,
   );
