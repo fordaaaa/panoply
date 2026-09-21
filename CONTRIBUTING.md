@@ -1,8 +1,8 @@
 # Contributing
 
-**Edit `commands/*.md` and `mcp/servers.json`. Nothing else is a source file.**
+**Edit `commands/*.md`, `skills/*/SKILL.md`, `agents/*.md`, and `mcp/servers.json`. Nothing else is a source file.**
 
-`.claude/`, `.opencode/`, `.cursor/`, `prompts/`, `.mcp.json`, and the `mcp` block of `opencode.json` are all generated. A PR that edits them by hand will be overwritten by the next build, and CI will fail.
+`.claude/`, `.opencode/`, `.cursor/`, `prompts/`, `.mcp.json`, and the `mcp` and `agent` blocks of `opencode.json` are all generated. A PR that edits them by hand will be overwritten by the next build, and CI will fail.
 
 ```bash
 node build.mjs          # regenerate every target
@@ -42,6 +42,26 @@ description: One line, max 200 chars — Claude reads this to decide when to inv
 Skills are Claude-Code-only (opencode and Cursor have no equivalent) — they render only to `.claude/skills/<name>/SKILL.md`, never to `.opencode/`, `.cursor/`, or `prompts/`.
 
 **The bar for a new skill:** the same one commands hold to, applied to prose instead of tool structure — it must leave something checkable behind, not just tell the agent to "be terse" or "be careful." A durable estimate, a self-reported metric, a required output format — something a reader (or the linter) could point at and say whether it held.
+
+## Adding an agent
+
+One file in `agents/`, e.g. `agents/plan.md`:
+
+```yaml
+---
+name: plan                 # must match the filename
+description: One line, max 200 chars — shown in the agent picker
+mode: primary              # primary | subagent | all
+model: provider/model      # optional — omit to use the user's default
+temperature: 0.2           # optional — a number between 0 and 1
+tools: {"write": false}    # optional — inline JSON object
+permission: {"edit": "deny"}  # optional — inline JSON object
+---
+```
+
+The body is the agent's per-message system prompt. Agents are opencode-only (Claude Code and Cursor have no `agent`-block equivalent) — they render into the `agent` block of `opencode.json`, merged over whatever agent names the user already has there. Canonical agents win on name collision; unknown names are left alone, never clobbered.
+
+**The bar for a new agent:** a mode must earn its per-message tax through *restriction* or *role* — denied tools, a read-only investigation loop, a plan-only contract. A second agent that behaves exactly like the default is just context weight.
 
 ## Adding an MCP server
 
