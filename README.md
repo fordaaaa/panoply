@@ -2,7 +2,7 @@
 
 # Panoply
 
-***panoply*** *(n.) — a complete and impressive collection. Also: a full suit of armor.*
+***panoply*** *(n.) — a complete and impressive collection.*
 
 **Slash commands and MCP servers for AI agents, written once and compiled everywhere.**
 
