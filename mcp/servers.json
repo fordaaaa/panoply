@@ -61,5 +61,14 @@
     "args": ["servers/opencode-bridge/index.mjs"],
     "auth": "opencode CLI login (reuse your existing `opencode auth` session — no token needed)",
     "why": "Delegates prompts to your local opencode CLI as a tool (ask_opencode, list_opencode_models, zen_chat) with your own login and quota. Opt in when you want a second agent's loop, agents, or free-tier models inside the current session; 3 tools, zero deps."
+  },
+
+  "brig": {
+    "profile": "opt-in",
+    "transport": "stdio",
+    "command": "uv",
+    "args": ["run", "--directory", "/abs/path/to/context-mcp", "python", "-m", "brig.mcp"],
+    "auth": "none (local index file per repo)",
+    "why": "Deterministic tree-sitter code-graph index (SQLite, no embeddings): search_symbols/get_symbol/get_outline/callers_callees/blast_radius/check_refs so agents fetch exact slices instead of reading whole files. Replace /abs/path/to/context-mcp with your brig checkout, then `brig index . --slug <name>` per repo."
   }
 }
