@@ -154,6 +154,10 @@ Servers you won't always want get `"profile": "opt-in"` in [`mcp/servers.json`](
 
 For a richer GitHub surface than the default server — Actions workflows + runs, Releases, **Projects v2**, labels, and search, plus a generic `gh_cli` passthrough that can run any `gh` subcommand — pull in the **`gh-cli`** server, which wraps your locally-authenticated `gh` binary with no token forwarding (`npx panoply init --with gh-cli`). See [`servers/gh-cli/README.md`](servers/gh-cli/README.md).
 
+To delegate prompts to your local `opencode` CLI as a tool — `ask_opencode`, `list_opencode_models`, `zen_chat`, spending your own opencode login and quota — pull in the **`opencode-bridge`** server (`npx panoply init --with opencode-bridge`). See [`servers/opencode-bridge/README.md`](servers/opencode-bridge/README.md).
+
+To let agents search a deterministic tree-sitter code-graph index instead of reading whole files — `search_symbols`, `get_symbol`, `get_outline`, `callers_callees`, `blast_radius`, `check_refs` — pull in the **`brig`** server (`npx panoply init --with brig`), then point its `--directory` at your brig checkout and index each repo. Pairs with the `brig-*` skills and the `templates/AGENTS.md` starter workflow.
+
 ## Skills
 
 Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*/SKILL.md`, rendered to `.claude/skills/`.
@@ -162,6 +166,9 @@ Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*
 |:--|:--|
 | `polyglot` | Detects the stack in the touched files (Python, Go, Rust, Node, Java, Docker) and names the right build/test/lint commands. `/commit`, `/test-gen`, and `/ci-fix` lean on it instead of assuming a runner. Ends every verification with a checkable `[polyglot: …]` report line. |
 | `caveman` | Compresses subagent reports and background/scratch output to a dense, telegraphic register to cut token usage — never the final message shown to you. Self-reports an estimated token reduction so the claim is checkable, not just vibes. |
+| `brig-investigator` | Searches the brig code-graph index first and reports exact `path:line` findings with scan counts — read-only, never edits. Findings feed the plan; they are not an implementation order. |
+| `brig-builder` | Executes a plan file in 1–2 file steps with green tests after every step. Ends each change with a `path:line-range — change` receipt; terminal `too-big. split:` / `needs-confirm. op:` / `ambiguous. ask:` lines end the step. |
+| `brig-reviewer` | Verifies the diff against the plan line by line and returns `verdict: accept \| request-changes` with one evidence line per hunk. Read-only — reports, never fixes. |
 
 A hook (`.claude/hooks/caveman-nudge.mjs`) nudges Claude to use it, scoped by `.claude/settings.json`'s `caveman.scope` field (or `PANOPLY_CAVEMAN_SCOPE`, which wins): `everywhere` (default here) compresses all output including the final message to you; `subagent` restricts it to `Task`-boundary traffic only, leaving your chat replies untouched. Opt into the `caveman` MCP server (`npx panoply init --with caveman`) for a real usage number instead of a heuristic.
 
