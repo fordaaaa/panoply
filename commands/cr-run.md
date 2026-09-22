@@ -12,6 +12,8 @@ Review this repository with parallel read-only subagents, then report findings r
 
 {{INCLUDE:_untrusted.md}}
 
+{{INCLUDE:_deterministic.md}}
+
 ## Step 1 — pick depth, and say what it costs
 
 Argument: `$ARGUMENTS` (default `quick`). These names describe **spend**, not thoroughness — a deeper pass is not automatically a better one, it just reads more.
@@ -27,6 +29,8 @@ Before spawning anything above `quick`, count files with `git ls-files | wc -l` 
 **Hard ceiling:** if the counted file total for a `deep` run exceeds **1500 files**, do not ask the usual yes/no — refuse outright, state the count, and offer the two real alternatives: scope to a subdirectory or diff, or drop to `standard`. Proceed at `deep` past that ceiling only if the user's message explicitly names a number at or above the count (e.g. "yes, all 2200 files") — a bare "yes" does not clear it. This exists because a one-word confirmation is cheap to give and easy to regret; restating the number back is not.
 
 **Scope:** if the working tree has a substantial uncommitted diff, or the user names a PR or branch, review that diff. Otherwise review the full source tree. Ask only if genuinely ambiguous.
+
+Run the deterministic prelude above automatically on first run: build the preview table, apply the 6-gate filter, and print the dry-run file count with coverage (`total / reviewed / skipped + reason`) before spawning above `quick`. State whether the optional `ocr` fast-path was used or pure-git emulation.
 
 ## Step 2 — resolve mode
 
@@ -44,8 +48,9 @@ Spawn one subagent per lens (and per area, at `deep`) — all in parallel, in a 
 
 Each subagent prompt must state:
 
-- Exactly which files, directories, or diff it owns — no overlap with its siblings.
-- Return ONLY verified, concrete findings: `file:line`, what's wrong, why it's a real bug, and a concrete fix.
+- Exactly which blast-radius file set it owns from the deterministic prelude — no overlap with its siblings.
+- The per-glob checklist it applied as a header (`pattern + rule text`), plus PR-description business context when available.
+- Return ONLY verified, concrete findings: `file:line`, what's wrong, why it's a real bug, and a concrete fix with `suggestion_code` / `existing_code` where it clarifies.
 - The severity and confidence scale:
 
 {{INCLUDE:_severity.md}}
@@ -56,9 +61,9 @@ Each subagent prompt must state:
 
 ## Step 4 — aggregate, verify, dedupe
 
-Merge into one list sorted by severity. Deduplicate anything two subagents found independently.
+Merge into one list sorted by severity. Deduplicate anything two subagents found independently (match on `path + category + snippet`, tolerant of line drift — not line number alone).
 
-**Open every cited `file:line` yourself and confirm the finding before it survives.** Drop anything you can't personally verify. Subagents produce false positives, and this step is the only thing standing between a false positive and an issue in the user's tracker.
+**Open every cited `file:line` yourself and confirm the finding before it survives.** Drop anything you can't personally verify. On misposition, locate by surrounding context and correct or drop. End with a coverage line: `total / reviewed / skipped + reason per skip`.
 
 ## Step 5 — drop findings already tracked
 
@@ -68,7 +73,7 @@ Drop any finding matching an open issue by file + category + fuzzy description, 
 
 ## Step 6 — report
 
-A table: severity, `file:line`, one-line summary, one-line fix. Then:
+A table grouped by severity: severity, `file:line`, one-line summary, one-line fix (with `suggestion_code` where it clarifies). Then:
 
 - **local** — offer to apply any of them directly to the working tree (Step 8).
 - **high-only** — state plainly what is and isn't being filed: "Filing the 2 high-severity findings; the 3 minor ones are listed above but not filed." Then Step 7 for the 🔴/🟠 subset.
