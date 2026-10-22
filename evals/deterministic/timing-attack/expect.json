@@ -1,0 +1,1 @@
+{"reviewed": 2, "skipped": [{"path": ".env", "reason": "secret"}, {"path": "assets/logo.png", "reason": "binary"}, {"path": "vendor/lodash/index.js", "reason": "default-exclude"}], "total": 5}

@@ -1,0 +1,39 @@
+diff --git a/.env b/.env
+new file mode 100644
+index 0000000..1a2b3c4
+--- /dev/null
++++ b/.env
+@@ -0,0 +1,2 @@
++STRIPE_SECRET=sk_live_abc123
++AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+diff --git a/assets/logo.png b/assets/logo.png
+new file mode 100644
+index 0000000..9f8e7d6
+Binary files /dev/null and b/assets/logo.png differ
+diff --git a/vendor/lodash/index.js b/vendor/lodash/index.js
+index 1111111..2222222 100644
+--- a/vendor/lodash/index.js
++++ b/vendor/lodash/index.js
+@@ -1,3 +1,4 @@
+ function get() {}
++function timingUnsafe(a, b) { return a == b; }
+ module.exports = { get };
+diff --git a/src/auth.ts b/src/auth.ts
+index 3333333..4444444 100644
+--- a/src/auth.ts
++++ b/src/auth.ts
+@@ -1,4 +1,7 @@
+ export function login(user: string, pw: string) {
++  if (!user || !pw) throw new Error("missing credentials");
+   return { user };
+ }
+diff --git a/src/timing.ts b/src/timing.ts
+index 5555555..6666666 100644
+--- a/src/timing.ts
++++ b/src/timing.ts
+@@ -1,3 +1,6 @@
+-export function eq(a: string, b: string) { return a === b; }
++import { timingSafeEqual } from "node:crypto";
++export function eq(a: string, b: string) {
++  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
++}

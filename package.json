@@ -10,10 +10,15 @@
   "scripts": {
     "build": "node build.mjs",
     "check": "node build.mjs --check",
-    "lint": "node build.mjs --lint"
+    "lint": "node build.mjs --lint",
+    "test": "node --test tests/harness.test.mjs",
+    "harness": "node bin/harness.mjs --preview"
   },
   "files": [
     "bin",
+    "lib/harness",
+    "evals/deterministic",
+    "tests",
     "commands",
     "skills",
     "prompts",

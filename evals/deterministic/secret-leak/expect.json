@@ -1,0 +1,1 @@
+{"reviewed": 2, "skipped": [{"path": "certs/server.pem", "reason": "secret"}, {"path": "internal/auth_test.go", "reason": "default-exclude"}], "total": 4}

@@ -1,6 +1,6 @@
 # Contributing
 
-**Edit `commands/*.md`, `skills/*/SKILL.md`, `agents/*.md`, and `mcp/servers.json`. Nothing else is a source file.**
+**Edit `commands/*.md`, `skills/*/SKILL.md`, `agents/*.md`, `mcp/servers.json`, `lib/harness/*.mjs`, `bin/harness.mjs`, and `evals/deterministic/*/expect.json`. Nothing else is a source file except `tests/harness.test.mjs` (node:test, zero deps).**
 
 `.claude/`, `.opencode/`, `.cursor/`, `prompts/`, `.mcp.json`, and the `mcp` and `agent` blocks of `opencode.json` are all generated. A PR that edits them by hand will be overwritten by the next build, and CI will fail.
 
