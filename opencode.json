@@ -14,11 +14,12 @@
       "url": "https://mcp.context7.com/mcp",
       "enabled": true
     },
-    "playwright": {
+    "camoufox": {
       "type": "local",
       "command": [
-        "node",
-        "servers/browser/index.mjs"
+        "npx",
+        "-y",
+        "camoufox-mcp-server@2.6.0"
       ],
       "enabled": true
     }

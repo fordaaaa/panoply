@@ -123,7 +123,8 @@ Two questions, asked the first time you want something filed, saved to `.panoply
 |:--|:--|:--|
 | `github` | default | Files issues and opens PRs. Pinned to `issues,pull_requests,repos` (~5–7k tokens vs ~15–25k unpinned). `gh` is the supported fallback. |
 | `context7` | default | Version-accurate library docs — stops `/cr-fix` inventing APIs (~400 tokens). |
-| `playwright` | default | Drives a real browser so `/verify` can confirm a UI renders (or hooks into live Chrome/Edge via `PANOPLY_BROWSER_CDP`). |
+| `camoufox` | default | Browser for agents. Camoufox is a Firefox build with fingerprint spoofing, so it gets through on sites that block headless Chromium. Needs Node 22+. |
+| `playwright` | opt-in | Chromium driver that can hook into your live Chrome/Edge session via `PANOPLY_BROWSER_CDP`. |
 | `gh-cli` | opt-in | Full `gh` surface the default server lacks: Actions, Releases, **Projects v2**, labels, search, plus a raw passthrough. Reuses your `gh auth` session. |
 | `opencode-bridge` | opt-in | Delegates prompts to your local `opencode` CLI (`ask_opencode`, `list_opencode_models`, `zen_chat`) on your own login and quota. |
 | `brig` | opt-in | Deterministic code-graph index so agents fetch exact slices instead of reading files. Needs your brig checkout path. |

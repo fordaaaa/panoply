@@ -18,13 +18,22 @@
     "why": "Version-accurate library docs. Cuts hallucinated APIs in /cr-fix on unfamiliar dependencies. Two tools, ~400 tokens, no auth - the cheapest server here."
   },
 
-  "playwright": {
+  "camoufox": {
     "profile": "default",
+    "transport": "stdio",
+    "command": "npx",
+    "args": ["-y", "camoufox-mcp-server@2.6.0"],
+    "auth": "none",
+    "why": "Default browser. Camoufox is a Firefox build with fingerprint spoofing, so agents can browse and verify UIs on sites that block headless Chromium. 17 tools. Needs Node 22+; first run downloads the browser. Pinned version; run `npx --package camoufox-mcp-server@2.6.0 camoufox-mcp-doctor` if launch fails. It cannot intercept worker WebSockets, so put egress controls around untrusted browsing."
+  },
+
+  "playwright": {
+    "profile": "opt-in",
     "transport": "stdio",
     "command": "node",
     "args": ["servers/browser/index.mjs"],
     "auth": "none",
-    "why": "Drives a real browser so /verify can check a web UI actually renders. Our panoply-browser wrapper pins the profile under ~/.panoply/browser, or hooks into a live Chrome/Edge with PANOPLY_BROWSER_CDP (--cdp-endpoint). ~21 tools (~5k tokens); worth it on repos with a front end."
+    "why": "Opt-in Chromium driver for hooking into your live Chrome/Edge session. Drives a real browser so /verify can check a web UI actually renders. Our panoply-browser wrapper pins the profile under ~/.panoply/browser, or hooks into a live Chrome/Edge with PANOPLY_BROWSER_CDP (--cdp-endpoint). ~21 tools (~5k tokens); worth it on repos with a front end."
   },
 
   "showcase": {

@@ -2,7 +2,7 @@
 
 ## Which servers need this
 
-Only **`github`** needs a secret. `context7`, `playwright`, `showcase`, and
+Only **`github`** needs a secret. `context7`, `camoufox`, `playwright`, `showcase`, and
 `caveman` all declare `"auth": "none"` in [`mcp/servers.json`](../mcp/servers.json)
 and need nothing from you.
 

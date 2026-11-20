@@ -9,10 +9,11 @@
     "context7": {
       "url": "https://mcp.context7.com/mcp"
     },
-    "playwright": {
-      "command": "node",
+    "camoufox": {
+      "command": "npx",
       "args": [
-        "servers/browser/index.mjs"
+        "-y",
+        "camoufox-mcp-server@2.6.0"
       ]
     }
   }

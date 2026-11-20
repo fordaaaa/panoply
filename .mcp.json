@@ -11,11 +11,12 @@
       "type": "http",
       "url": "https://mcp.context7.com/mcp"
     },
-    "playwright": {
+    "camoufox": {
       "type": "stdio",
-      "command": "node",
+      "command": "npx",
       "args": [
-        "servers/browser/index.mjs"
+        "-y",
+        "camoufox-mcp-server@2.6.0"
       ]
     }
   }
