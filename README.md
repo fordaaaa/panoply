@@ -143,7 +143,7 @@ Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*
 |:--|:--|
 | `polyglot` | Detects the stack in the touched files and names the right build/test/lint commands. Ends verification with a checkable `[polyglot: …]` line. |
 | `caveman` | Compresses subagent and scratch output to a dense register to cut tokens. Self-reports an estimated reduction so the claim is checkable. |
-| `brig-investigator` / `brig-builder` / `brig-reviewer` | Index-first investigate → plan-only execution → diff-vs-plan review, each with a checkable output format. |
+| `brig-investigator` / `brig-builder` / `brig-reviewer` | Index-first investigate → plan-only execution → diff-vs-plan review, each with a checkable output format. Vendored from [brig](https://github.com/fordaaaa/context-mcp) `skills/` — brig is the source of truth; refresh with `node bin/sync-brig-skills.mjs`. |
 
 ## Running in CI / AWS
 
