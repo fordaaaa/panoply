@@ -7,7 +7,7 @@
 // are Claude-Code-only (no opencode/Cursor equivalent), so they render only to
 // .claude/skills/, not to the other three targets. Agents (plan/build modes
 // with their own per-message prompt) are opencode-only, so they render only
-// into the `agent` block of opencode.json. Frontmatter carries mode, model,
+// into the `agent` block of opencode.json. Frontmatter carries mode, model, variant,
 // temperature, tools, and permission; tools/permission are inline JSON objects
 // because this file's frontmatter parser is flat `key: value` only.
 //
@@ -380,6 +380,9 @@ function lintAgents(agentFiles) {
     if (attrs.model !== undefined && !String(attrs.model).trim()) {
       fail(`${file}: model is present but empty`);
     }
+    if (attrs.variant !== undefined && !String(attrs.variant).trim()) {
+      fail(`${file}: variant is present but empty`);
+    }
     if (attrs.temperature !== undefined) {
       const t = Number(attrs.temperature);
       if (!Number.isFinite(t) || t < 0 || t > 1) {
@@ -412,6 +415,7 @@ function buildAgents(agentFiles) {
     const { attrs, body } = parse(readFileSync(join(AGENTS_SRC, file), "utf8"), file);
     const entry = { description: attrs.description, mode: attrs.mode };
     if (attrs.model !== undefined) entry.model = String(attrs.model).trim();
+    if (attrs.variant !== undefined) entry.variant = String(attrs.variant).trim();
     if (attrs.temperature !== undefined) entry.temperature = Number(attrs.temperature);
     const tools = jsonField(attrs, file, "tools");
     if (tools !== undefined) entry.tools = tools;

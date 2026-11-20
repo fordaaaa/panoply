@@ -53,6 +53,7 @@ name: plan                 # must match the filename
 description: One line, max 200 chars — shown in the agent picker
 mode: primary              # primary | subagent | all
 model: provider/model      # optional — omit to use the user's default
+variant: high              # optional — reasoning variant, passed through as-is
 temperature: 0.2           # optional — a number between 0 and 1
 tools: {"write": false}    # optional — inline JSON object
 permission: {"edit": "deny"}  # optional — inline JSON object
