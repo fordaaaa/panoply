@@ -133,7 +133,19 @@ Opt-ins pull in with `npx panoply init --with <name>`. Everything comes from [`m
 
 ## Agents
 
-opencode-only (Claude Code/Cursor have no equivalent): `plan` investigates read-only and writes a plan file; `build` executes it 1–2 files at a time with green tests and receipt lines. Sourced from `agents/*.md`, rendered into `opencode.json`'s `agent` block without touching agents you defined yourself. Starting template for your own repos: [`templates/AGENTS.md`](templates/AGENTS.md).
+opencode-only (Claude Code/Cursor have no equivalent):
+
+| Agent | Role |
+|:--|:--|
+| `plan` / `build` | Read-only investigation into a plan file, then execution 1–2 files at a time with green tests and receipt lines. |
+| `orchestrator` | Writes the acceptance contract, delegates to workers, and verifies their evidence itself. |
+| `builder` | Test-first worker: failing test, minimal fix, repeat until criteria pass. |
+| `grunt` | Bulk and context-heavy edits on a free 1M-token model. |
+| `investigator` | Read-only, brig-first code search and impact analysis. |
+| `reviewer` | Fresh-context diff review that ends in `verdict: accept` or `request-changes`. |
+| `verifier` | Runs build, lint and tests and reports pass/fail evidence. Never edits. |
+
+`grunt`, `reviewer` and `verifier` pin free opencode models; delete the `model:` line in `agents/<name>.md` to use your default. Sourced from `agents/*.md`, rendered into `opencode.json`'s `agent` block without touching agents you defined yourself. Starting template for your own repos: [`templates/AGENTS.md`](templates/AGENTS.md).
 
 ## Skills
 
