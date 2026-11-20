@@ -77,6 +77,7 @@ Using something else? Open [`prompts/`](prompts/), copy a file, replace `{{ARGUM
 |:--|:--|:--|
 | **`/map`** `[refresh]` | Parallel subagents map the repo once, stamped with the commit. Refreshes only what moved. | `.panoply/map.md` |
 | **`/spec`** `[what you want \| resume]` | Turns a request into acceptance criteria + a checklist, then works it one task at a time, ticking boxes on disk. | `.panoply/specs/<slug>.md` |
+| **`/impl`** `[spec-slug \| what to build]` | Implements one task test-first: failing test first, minimal fix, run checks, repeat until criteria pass. Never self-verifies. | ticked spec + RED/GREEN evidence |
 | **`/verify`** `[spec-slug \| diff]` | Grades the diff against criteria written *before* the work, with four parallel checkers. Runs the suite itself. | a verdict in the spec |
 | **`/debug`** `[symptom]` | Every hypothesis gets a falsifying experiment and a recorded result. Nothing is tested twice. | `.panoply/debug/<slug>.md` |
 | **`/prompt`** `[what you want]` | Compiles a half-formed request into a structured prompt + plan. Runs on the cheapest model, so it costs ~nothing. | a prompt you can edit |
@@ -160,8 +161,8 @@ commands/                  ← the files you edit
 ├── _severity.md
 ├── _untrusted.md
 └── cr-run.md, cr-fix.md         ← review
-    map.md, spec.md, verify.md,  ← plan, verify, debug
-    debug.md, prompt.md
+    map.md, spec.md, impl.md,    ← plan, test-first impl
+    verify.md, debug.md, prompt.md
     commit.md, test-gen.md,      ← ship
     ci-fix.md
     onboard.md, handoff.md       ← orient
