@@ -35,7 +35,7 @@ One directory in `skills/`, e.g. `skills/my-skill/SKILL.md`:
 ```yaml
 ---
 name: my-skill            # must match the directory name
-description: One line, max 200 chars — Claude reads this to decide when to invoke the skill
+description: Max 1024 chars (Claude Code’s cap) — Claude reads this to decide when to invoke the skill
 ---
 ```
 

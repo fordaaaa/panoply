@@ -284,7 +284,8 @@ function lintSkills(skillDirs) {
     if (!existsSync(path)) { fail(`${file}: missing`); continue; }
     const { attrs, body } = parse(readFileSync(path, "utf8"), file);
     if (attrs.name !== name) fail(`${file}: frontmatter name \`${attrs.name}\` does not match the directory name`);
-    if (attrs.description.length > 200) fail(`${file}: description is ${attrs.description.length} chars (max 200)`);
+    // Claude Code's own cap; vendored skills ship descriptions well past 200.
+    if (attrs.description.length > 1024) fail(`${file}: description is ${attrs.description.length} chars (max 1024)`);
     if (body.includes(MARKER)) fail(`${file}: contains the generated-file marker — you are editing a build output, not a source`);
   }
 
@@ -315,15 +316,18 @@ function buildSkills(skillDirs) {
     const outDir = join(dest, name);
     const outFile = join(outDir, "SKILL.md");
     const current = existsSync(outFile) ? readFileSync(outFile, "utf8") : null;
-    if (current === out) continue;
-    if (check) { report(`claude-code-skills/${name}`, true); continue; }
-    mkdirSync(outDir, { recursive: true });
-    writeFileSync(outFile, out);
-    written++;
-    // Bundled assets alongside SKILL.md (anything that isn't SKILL.md itself).
+    if (current !== out) {
+      if (check) { report(`claude-code-skills/${name}`, true); continue; }
+      mkdirSync(outDir, { recursive: true });
+      writeFileSync(outFile, out);
+      written++;
+    }
+    if (check) continue;
+    // Bundled assets alongside SKILL.md (anything that isn't SKILL.md itself),
+    // including subdirectories like references/ and scripts/.
     for (const f of readdirSync(src, { withFileTypes: true })) {
-      if (!f.isFile() || f.name === "SKILL.md") continue;
-      cpSync(join(src, f.name), join(outDir, f.name));
+      if (f.name === "SKILL.md" || !(f.isFile() || f.isDirectory())) continue;
+      cpSync(join(src, f.name), join(outDir, f.name), { recursive: true });
     }
   }
 }
