@@ -39,7 +39,7 @@ and every other `gh` subcommand, and it authenticates through your existing
 
 ## Config
 
-Opt-in — add it with `npx panoply init --with gh-cli`, or point any agent at it:
+Opt-in — add it with `node ~/panoply/bin/init.mjs --with gh-cli`, or point any agent at it:
 
 ```jsonc
 // .mcp.json  (Claude Code)

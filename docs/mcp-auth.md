@@ -54,7 +54,7 @@ breaks nothing.
 `showcase` and `caveman` need no secrets — just pull them in:
 
 ```bash
-npx panoply init --with caveman,showcase
+node ~/panoply/bin/init.mjs --with caveman,showcase
 ```
 
 ## Adding a new server later

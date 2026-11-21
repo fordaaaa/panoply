@@ -10,7 +10,7 @@
 These come from panoply as opt-ins — they are never required:
 
 ```bash
-npx panoply init --with opencode-bridge,brig
+node ~/panoply/bin/init.mjs --with opencode-bridge,brig
 ```
 
 - **opencode-bridge** (`servers/opencode-bridge/`) — delegates a prompt to

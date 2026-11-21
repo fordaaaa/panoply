@@ -20,7 +20,7 @@ a hosted review bot would — without needing infra of your own.
    Actions). This is separate from your local Claude Code login — CI runs
    as the API, billed per the API's usage, not your subscription.
 
-3. Make sure panoply itself is installed in the repo (`npx panoply init`) so
+3. Make sure panoply itself is installed in the repo (`node ~/panoply/bin/init.mjs`) so
    `commands/cr-run.md` and `.panoply/config.md` exist for the action to read.
 
 4. Push it. The next PR opened or updated gets a `/cr-run quick` pass.

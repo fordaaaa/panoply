@@ -14,4 +14,4 @@ Config:
 { "mcpServers": { "caveman": { "type": "stdio", "command": "node", "args": ["servers/caveman/index.mjs"] } } }
 ```
 
-Opt-in — pull it in with `npx panoply init --with caveman`. Requires Node >= 18.
+Opt-in — pull it in with `node ~/panoply/bin/init.mjs --with caveman`. Requires Node >= 18.

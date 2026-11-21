@@ -1,7 +1,7 @@
 name: panoply review
 
 # Copy this file to .github/workflows/panoply-review.yml in a repo that has
-# panoply installed (npx panoply init). See docs/ci-trigger.md for setup.
+# panoply installed (node ~/panoply/bin/init.mjs). See docs/ci-trigger.md for setup.
 
 on:
   pull_request:

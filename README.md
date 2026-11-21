@@ -32,24 +32,27 @@ Skills, MCP servers and agents live in one canonical source, and `node build.mjs
 
 ## Install
 
-```bash
-npx panoply init --global   # every project on the machine
-```
-
-Or `npx panoply init` inside one project to scope it there. Either way it detects Claude Code, opencode, or Cursor, installs there, never overwrites a command you wrote yourself, and **configures nothing by default** — everything starts in local mode.
-
-In Claude Code you can install as an updatable plugin instead:
+In Claude Code, the simplest route is the plugin, which stays updatable:
 
 ```
 /plugin marketplace add fordaaaa/panoply
 /plugin install panoply@panoply
 ```
 
+For opencode, Cursor, or a manual Claude Code install, clone the repo and run the installer. It needs Node 18+ and has no dependencies:
+
+```bash
+git clone https://github.com/fordaaaa/panoply ~/panoply
+node ~/panoply/bin/init.mjs --global   # every project on the machine
+```
+
+Or run `node ~/panoply/bin/init.mjs` inside one project to scope it there. Either way it detects Claude Code, opencode, or Cursor, installs there, never overwrites a command or skill you wrote yourself, and **configures nothing by default**. Everything starts in local mode. To update, `git -C ~/panoply pull` and rerun it.
+
 Using something else? Open [`prompts/`](prompts/), copy a file, replace `{{ARGUMENTS}}`, paste it in.
 
 ## Skills
 
-opencode and Cursor still have no skills; they are installed for Claude Code by `npx panoply init` and the plugin. Sourced from `skills/*/SKILL.md`, rendered to `.claude/skills/`.
+opencode and Cursor still have no skills; they are installed for Claude Code by `node ~/panoply/bin/init.mjs` and the plugin. Sourced from `skills/*/SKILL.md`, rendered to `.claude/skills/`.
 
 | Skill | What it does |
 |:--|:--|
@@ -73,7 +76,7 @@ opencode and Cursor still have no skills; they are installed for Claude Code by 
 | `brig` | opt-in | Deterministic code-graph index so agents fetch exact slices instead of reading files. Needs your brig checkout path. |
 | `showcase` / `caveman` | opt-in | Session screen-recordings / measured usage signal for the compression hook. |
 
-Opt-ins pull in with `npx panoply init --with <name>`. Everything comes from [`mcp/servers.json`](mcp/servers.json), rendered into `.mcp.json`, `.cursor/mcp.json`, and `opencode.json`. The GitHub server authenticates via `GITHUB_MCP_TOKEN` — see [`docs/mcp-auth.md`](docs/mcp-auth.md) (or skip it and just use `gh`).
+Opt-ins pull in with `node ~/panoply/bin/init.mjs --with <name>`. Everything comes from [`mcp/servers.json`](mcp/servers.json), rendered into `.mcp.json`, `.cursor/mcp.json`, and `opencode.json`. The GitHub server authenticates via `GITHUB_MCP_TOKEN` — see [`docs/mcp-auth.md`](docs/mcp-auth.md) (or skip it and just use `gh`).
 
 ## Agents
 
@@ -93,7 +96,7 @@ opencode-only (Claude Code/Cursor have no equivalent):
 
 ## Legacy slash commands
 
-The slash commands below still install with `npx panoply init` and work as before; they are no longer the main focus of this project.
+The slash commands below still install with `node ~/panoply/bin/init.mjs` and work as before; they are no longer the main focus of this project.
 
 ```
 > /cr-run standard

@@ -20,7 +20,7 @@ running `opencode` yourself.
 
 ## Config
 
-Opt-in — add it with `npx panoply init --with opencode-bridge`, or point any agent at it:
+Opt-in — add it with `node ~/panoply/bin/init.mjs --with opencode-bridge`, or point any agent at it:
 
 ```jsonc
 // .mcp.json  (Claude Code)

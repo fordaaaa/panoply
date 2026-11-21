@@ -1,4 +1,4 @@
-// `npx panoply init` skill installs (Claude Code only). Runs the real CLI with
+// `node ~/panoply/bin/init.mjs` skill installs (Claude Code only). Runs the real CLI with
 // HOME and cwd pointed at temp dirs, so nothing touches the real ~/.claude or
 // this repo.
 

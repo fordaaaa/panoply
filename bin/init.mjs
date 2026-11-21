@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // Installs the panoply commands and skills into whichever agent this project uses.
 //
-//   npx panoply init                 detect the tool and install
-//   npx panoply init --global        install once for every project on this machine
-//   npx panoply init --tool cursor   force one tool
-//   npx panoply init --all           install for every supported tool
-//   npx panoply init --with playwright,context7
-//   npx panoply init --dry-run
+//   node ~/panoply/bin/init.mjs                 detect the tool and install
+//   node ~/panoply/bin/init.mjs --global        install once for every project on this machine
+//   node ~/panoply/bin/init.mjs --tool cursor   force one tool
+//   node ~/panoply/bin/init.mjs --all           install for every supported tool
+//   node ~/panoply/bin/init.mjs --with playwright,context7
+//   node ~/panoply/bin/init.mjs --dry-run
 //
 // Zero dependencies, by design. Nothing here phones home.
 
@@ -23,14 +23,14 @@ const argv = process.argv.slice(2);
 
 const USAGE = `Installs the panoply commands into whichever agent this project uses.
 
-  npx panoply init                 detect the tool and install
-  npx panoply init --global        install once for every project on this machine
-  npx panoply init --tool cursor   force one tool (claude-code, opencode, cursor)
-  npx panoply init --all           install for every supported tool
-  npx panoply init --with playwright,context7
-  npx panoply init --dry-run       show what would happen, write nothing
-  npx panoply init --yes           skip the setup questions
-  npx panoply init --help`;
+  node ~/panoply/bin/init.mjs                 detect the tool and install
+  node ~/panoply/bin/init.mjs --global        install once for every project on this machine
+  node ~/panoply/bin/init.mjs --tool cursor   force one tool (claude-code, opencode, cursor)
+  node ~/panoply/bin/init.mjs --all           install for every supported tool
+  node ~/panoply/bin/init.mjs --with playwright,context7
+  node ~/panoply/bin/init.mjs --dry-run       show what would happen, write nothing
+  node ~/panoply/bin/init.mjs --yes           skip the setup questions
+  node ~/panoply/bin/init.mjs --help`;
 
 if (argv.includes("--help") || argv.includes("-h")) {
   console.log(USAGE);
@@ -320,7 +320,7 @@ function install(tool) {
 
 const cmd = argv[0] && !argv[0].startsWith("-") ? argv[0] : "init";
 if (!["init", "install"].includes(cmd)) {
-  console.error(`unknown command \`${cmd}\` — usage: npx panoply init [--tool <name>] [--all] [--with a,b] [--dry-run]`);
+  console.error(`unknown command \`${cmd}\` — usage: node ~/panoply/bin/init.mjs [--tool <name>] [--all] [--with a,b] [--dry-run]`);
   process.exit(1);
 }
 
@@ -341,8 +341,8 @@ else {
     console.log(
       `Couldn't tell which agent ${where}.\n` +
       "Re-run with one of:\n" +
-      Object.entries(TOOLS).map(([k, v]) => `  npx panoply init${g} --tool ${k}   (${v.label})`).join("\n") +
-      `\n  npx panoply init${g} --all\n\n` +
+      Object.entries(TOOLS).map(([k, v]) => `  node ~/panoply/bin/init.mjs${g} --tool ${k}   (${v.label})`).join("\n") +
+      `\n  node ~/panoply/bin/init.mjs${g} --all\n\n` +
       "Using something else? Copy a file from prompts/ and paste it in.",
     );
     process.exit(0);
@@ -355,7 +355,7 @@ else {
 if (cwd === pkgRoot && !isGlobal) {
   console.error(
     "This is the panoply repo itself — there is nothing to install into.\n" +
-    "Run `node build.mjs` to regenerate the commands, `npx panoply init --global`\n" +
+    "Run `node build.mjs` to regenerate the commands, `node ~/panoply/bin/init.mjs --global`\n" +
     "to install for every project, or run this from another project.",
   );
   process.exit(1);

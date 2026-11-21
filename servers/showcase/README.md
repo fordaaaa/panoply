@@ -14,7 +14,7 @@ hand-rolled stdio JSON-RPC 2.0.
 
 ## Exports folder resolution
 
-1. `exports_dir` from `~/.panoply/showcase/config.json` (written by `showcase_setup` or `npx panoply init`)
+1. `exports_dir` from `~/.panoply/showcase/config.json` (written by `showcase_setup` or `node ~/panoply/bin/init.mjs`)
 2. `~/Videos/panoply` if `~/Videos` exists
 3. `./exports` relative to the current working directory
 
