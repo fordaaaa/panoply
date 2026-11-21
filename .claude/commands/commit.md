@@ -52,7 +52,7 @@ State each result as its exit code plus one summary line. If the repo has no che
 
 Run `git diff --cached --stat` plus the full `git diff --cached` when small enough to read. Confirm:
 
-- No secrets, tokens, or credential files.
+- No secrets, tokens, or credential files. If `betterleaks --version` succeeds, scan the staged diff as the `secret-scan` skill describes (`git diff --cached … | betterleaks stdin --git-diff --redact --exit-code=2`). Exit `2` means findings: stop the commit, report each one as `path:line — rule_id`, and wait. Any exit other than `0` or `2` means the scan errored, so stop and report it; don't count it as clean. If betterleaks isn't installed, say so in one line and review by eye.
 - No lockfiles, generated output, or unrelated cleanup mixed in.
 - Every hunk belongs to the message you are about to write. Unrelated hunks get unstaged, not smuggled along.
 
