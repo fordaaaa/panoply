@@ -7,6 +7,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ### Added
 
+- **`secret-scan` skill**: drives the betterleaks CLI over staged changes, the working tree, git history or a remote repo, always with `--redact`, and sorts each finding into rotate, purge or allowlist. `/commit` now blocks on betterleaks findings when the binary is installed.
+- **`security-audit` and `unslop` skills**: vendored from cloudflare/security-audit-skill (MIT) and heydamir/unslop (CC BY 4.0), each with its license and a `SOURCE.md` pinning the upstream commit.
+- **Six opencode agents**: `orchestrator`, `builder`, `grunt`, `investigator`, `reviewer` and `verifier`. The agent frontmatter now passes `variant` through to `opencode.json`.
+- **`/impl` command**: test-first implementation of one spec task.
+
+### Changed
+
+- **The default browser MCP is now `camoufox`** (`camoufox-mcp-server@2.6.0`, needs Node 22+). `playwright` is now opt-in: re-add it with `npx panoply init --with playwright` if you rely on `PANOPLY_BROWSER_CDP`.
+
+### Fixed
+
+- The build now copies skill subdirectories (`references/`, `scripts/`) and allows skill descriptions up to Claude Code's 1024-char cap.
+
 - **`opencode-bridge` MCP server** (`servers/opencode-bridge/`) — an opt-in zero-dependency stdio server that wraps your local `opencode` CLI login as three tools: `ask_opencode` (one fresh `opencode run` per call, `timeoutSecs` up to 600, transient 429/5xx retries, timeout errors carry run metadata only), `list_opencode_models`, and `zen_chat` (direct Zen endpoint via `OPENCODE_ZEN_API_KEY`). Enable with `npx panoply init --with opencode-bridge`. Requires `opencode` on PATH and logged in; spends your own quota. See `servers/opencode-bridge/README.md`.
 
 - **`brig` MCP server entry** (`mcp/servers.json`, opt-in) — wires the external brig checkout's 7 code-graph tools (`search_symbols`, `get_symbol`, `get_outline`, `callers_callees`, `blast_radius`, `check_refs`) over stdio via `uv`. Enable with `npx panoply init --with brig`, replacing `/abs/path/to/context-mcp` with your checkout, then `brig index . --slug <name>` per repo.
