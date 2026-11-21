@@ -157,6 +157,7 @@ Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*
 | `polyglot` | Detects the stack in the touched files and names the right build/test/lint commands. Ends verification with a checkable `[polyglot: …]` line. |
 | `caveman` | Compresses subagent and scratch output to a dense register to cut tokens. Self-reports an estimated reduction so the claim is checkable. |
 | `brig-investigator` / `brig-builder` / `brig-reviewer` | Index-first investigate → plan-only execution → diff-vs-plan review, each with a checkable output format. Vendored from [brig](https://github.com/fordaaaa/context-mcp) `skills/` — brig is the source of truth; refresh with `node bin/sync-brig-skills.mjs`. |
+| `secret-scan` | Runs [betterleaks](https://github.com/betterleaks/betterleaks) on staged changes, the tree, history or a remote repo, always redacted. Sorts each finding into rotate, purge or allowlist. Validates live credentials only with consent. |
 | `security-audit` | Multi-phase security audit with machine-readable findings and validators that check coverage and evidence. Vendored from [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (MIT). |
 | `unslop` | Turns AI-looking UI into a designed interface: finds the tells (purple gradients, glows, emoji labels), sets a direction, fixes it pass by pass. Vendored from [heydamir/unslop](https://github.com/heydamir/unslop) (CC BY 4.0, by Damir Sokolovsky). |
 
