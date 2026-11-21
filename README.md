@@ -4,9 +4,9 @@
 
 ***panoply*** *(n.) — a complete and impressive collection.*
 
-**Slash commands and MCP servers for AI agents, written once and compiled everywhere.**
+**An agent toolkit: skills, MCP servers and agents, written once and compiled to Claude Code, opencode and Cursor.**
 
-One canonical source compiles out to Claude Code, opencode, Cursor, or plain copy-paste. Twelve commands today — a code review that files its own issues, a spec that survives a compacted context, a repo map that stops re-reading the tree, a debug loop that keeps a ledger, plus onboarding, handoffs, commits, test generation, and CI fixes — and room for whatever you add next.
+Skills, MCP servers and agents live in one canonical source, and `node build.mjs` compiles each one to the agents that support it: skills for Claude Code, agents for opencode, MCP servers for all three. Prompts for anything else are copied out as plain text. The slash commands that came first are still here, documented under [Legacy slash commands](#legacy-slash-commands).
 
 [![License](https://img.shields.io/github/license/fordaaaa/panoply?style=flat-square&color=4c9a2a&labelColor=1c1c1c)](LICENSE)
 [![Stars](https://img.shields.io/github/stars/fordaaaa/panoply?style=flat-square&logo=github&color=f5c542&labelColor=1c1c1c)](https://github.com/fordaaaa/panoply/stargazers)
@@ -21,12 +21,13 @@ One canonical source compiles out to Claude Code, opencode, Cursor, or plain cop
 ## Contents
 
 - [Install](#install)
-- [What you get](#what-you-get)
-- [What it won't do](#what-it-wont-do)
-- [Configuration](#configuration)
+- [Skills](#skills)
 - [MCP servers](#mcp-servers)
 - [Agents](#agents)
-- [Skills](#skills)
+- [Legacy slash commands](#legacy-slash-commands)
+- [What it won't do](#what-it-wont-do)
+- [Configuration](#configuration)
+- [Running in CI / AWS](#running-in-ci--aws)
 - [Contributing](#contributing)
 
 ## Install
@@ -46,7 +47,53 @@ In Claude Code you can install as an updatable plugin instead:
 
 Using something else? Open [`prompts/`](prompts/), copy a file, replace `{{ARGUMENTS}}`, paste it in.
 
-## What you get
+## Skills
+
+Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*/SKILL.md`, rendered to `.claude/skills/`.
+
+| Skill | What it does |
+|:--|:--|
+| `polyglot` | Detects the stack in the touched files and names the right build/test/lint commands. Ends verification with a checkable `[polyglot: …]` line. |
+| `caveman` | Compresses subagent and scratch output to a dense register to cut tokens. Self-reports an estimated reduction so the claim is checkable. |
+| `brig-investigator` / `brig-builder` / `brig-reviewer` | Index-first investigate → plan-only execution → diff-vs-plan review, each with a checkable output format. Vendored from [brig](https://github.com/fordaaaa/context-mcp) `skills/` — brig is the source of truth; refresh with `node bin/sync-brig-skills.mjs`. |
+| `secret-scan` | Runs [betterleaks](https://github.com/betterleaks/betterleaks) on staged changes, the tree, history or a remote repo, always redacted. Sorts each finding into rotate, purge or allowlist. Validates live credentials only with consent. |
+| `security-audit` | Multi-phase security audit with machine-readable findings and validators that check coverage and evidence. Vendored from [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (MIT). |
+| `unslop` | Turns AI-looking UI into a designed interface: finds the tells (purple gradients, glows, emoji labels), sets a direction, fixes it pass by pass. Vendored from [heydamir/unslop](https://github.com/heydamir/unslop) (CC BY 4.0, by Damir Sokolovsky). |
+
+## MCP servers
+
+| Server | Profile | Why it's here |
+|:--|:--|:--|
+| `github` | default | Files issues and opens PRs. Pinned to `issues,pull_requests,repos` (~5–7k tokens vs ~15–25k unpinned). `gh` is the supported fallback. |
+| `context7` | default | Version-accurate library docs — stops `/cr-fix` inventing APIs (~400 tokens). |
+| `camoufox` | default | Browser for agents. Camoufox is a Firefox build with fingerprint spoofing, so it gets through on sites that block headless Chromium. Needs Node 22+. |
+| `playwright` | opt-in | Chromium driver that can hook into your live Chrome/Edge session via `PANOPLY_BROWSER_CDP`. |
+| `gh-cli` | opt-in | Full `gh` surface the default server lacks: Actions, Releases, **Projects v2**, labels, search, plus a raw passthrough. Reuses your `gh auth` session. |
+| `opencode-bridge` | opt-in | Delegates prompts to your local `opencode` CLI (`ask_opencode`, `list_opencode_models`, `zen_chat`) on your own login and quota. |
+| `brig` | opt-in | Deterministic code-graph index so agents fetch exact slices instead of reading files. Needs your brig checkout path. |
+| `showcase` / `caveman` | opt-in | Session screen-recordings / measured usage signal for the compression hook. |
+
+Opt-ins pull in with `npx panoply init --with <name>`. Everything comes from [`mcp/servers.json`](mcp/servers.json), rendered into `.mcp.json`, `.cursor/mcp.json`, and `opencode.json`. The GitHub server authenticates via `GITHUB_MCP_TOKEN` — see [`docs/mcp-auth.md`](docs/mcp-auth.md) (or skip it and just use `gh`).
+
+## Agents
+
+opencode-only (Claude Code/Cursor have no equivalent):
+
+| Agent | Role |
+|:--|:--|
+| `plan` / `build` | Read-only investigation into a plan file, then execution 1–2 files at a time with green tests and receipt lines. |
+| `orchestrator` | Writes the acceptance contract, delegates to workers, and verifies their evidence itself. |
+| `builder` | Test-first worker: failing test, minimal fix, repeat until criteria pass. |
+| `grunt` | Bulk and context-heavy edits on a free 1M-token model. |
+| `investigator` | Read-only, brig-first code search and impact analysis. |
+| `reviewer` | Fresh-context diff review that ends in `verdict: accept` or `request-changes`. |
+| `verifier` | Runs build, lint and tests and reports pass/fail evidence. Never edits. |
+
+`grunt`, `reviewer` and `verifier` pin free opencode models; delete the `model:` line in `agents/<name>.md` to use your default. Sourced from `agents/*.md`, rendered into `opencode.json`'s `agent` block without touching agents you defined yourself. Starting template for your own repos: [`templates/AGENTS.md`](templates/AGENTS.md).
+
+## Legacy slash commands
+
+The slash commands below still install with `npx panoply init` and work as before; they are no longer the main focus of this project.
 
 ```
 > /cr-run standard
@@ -116,50 +163,6 @@ Findings carry a severity (🔴 Critical · 🟠 High · 🟡 Medium · 🟢 Low
 ## Configuration
 
 Two questions, asked the first time you want something filed, saved to `.panoply/config.md` (`filing: local | high-only | all`, `autoclose: off | on`). Until then everything runs in local mode: report only, nothing filed, committed, or pushed. Say *"reconfigure"* or edit the file to change it.
-
-## MCP servers
-
-| Server | Profile | Why it's here |
-|:--|:--|:--|
-| `github` | default | Files issues and opens PRs. Pinned to `issues,pull_requests,repos` (~5–7k tokens vs ~15–25k unpinned). `gh` is the supported fallback. |
-| `context7` | default | Version-accurate library docs — stops `/cr-fix` inventing APIs (~400 tokens). |
-| `camoufox` | default | Browser for agents. Camoufox is a Firefox build with fingerprint spoofing, so it gets through on sites that block headless Chromium. Needs Node 22+. |
-| `playwright` | opt-in | Chromium driver that can hook into your live Chrome/Edge session via `PANOPLY_BROWSER_CDP`. |
-| `gh-cli` | opt-in | Full `gh` surface the default server lacks: Actions, Releases, **Projects v2**, labels, search, plus a raw passthrough. Reuses your `gh auth` session. |
-| `opencode-bridge` | opt-in | Delegates prompts to your local `opencode` CLI (`ask_opencode`, `list_opencode_models`, `zen_chat`) on your own login and quota. |
-| `brig` | opt-in | Deterministic code-graph index so agents fetch exact slices instead of reading files. Needs your brig checkout path. |
-| `showcase` / `caveman` | opt-in | Session screen-recordings / measured usage signal for the compression hook. |
-
-Opt-ins pull in with `npx panoply init --with <name>`. Everything comes from [`mcp/servers.json`](mcp/servers.json), rendered into `.mcp.json`, `.cursor/mcp.json`, and `opencode.json`. The GitHub server authenticates via `GITHUB_MCP_TOKEN` — see [`docs/mcp-auth.md`](docs/mcp-auth.md) (or skip it and just use `gh`).
-
-## Agents
-
-opencode-only (Claude Code/Cursor have no equivalent):
-
-| Agent | Role |
-|:--|:--|
-| `plan` / `build` | Read-only investigation into a plan file, then execution 1–2 files at a time with green tests and receipt lines. |
-| `orchestrator` | Writes the acceptance contract, delegates to workers, and verifies their evidence itself. |
-| `builder` | Test-first worker: failing test, minimal fix, repeat until criteria pass. |
-| `grunt` | Bulk and context-heavy edits on a free 1M-token model. |
-| `investigator` | Read-only, brig-first code search and impact analysis. |
-| `reviewer` | Fresh-context diff review that ends in `verdict: accept` or `request-changes`. |
-| `verifier` | Runs build, lint and tests and reports pass/fail evidence. Never edits. |
-
-`grunt`, `reviewer` and `verifier` pin free opencode models; delete the `model:` line in `agents/<name>.md` to use your default. Sourced from `agents/*.md`, rendered into `opencode.json`'s `agent` block without touching agents you defined yourself. Starting template for your own repos: [`templates/AGENTS.md`](templates/AGENTS.md).
-
-## Skills
-
-Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*/SKILL.md`, rendered to `.claude/skills/`.
-
-| Skill | What it does |
-|:--|:--|
-| `polyglot` | Detects the stack in the touched files and names the right build/test/lint commands. Ends verification with a checkable `[polyglot: …]` line. |
-| `caveman` | Compresses subagent and scratch output to a dense register to cut tokens. Self-reports an estimated reduction so the claim is checkable. |
-| `brig-investigator` / `brig-builder` / `brig-reviewer` | Index-first investigate → plan-only execution → diff-vs-plan review, each with a checkable output format. Vendored from [brig](https://github.com/fordaaaa/context-mcp) `skills/` — brig is the source of truth; refresh with `node bin/sync-brig-skills.mjs`. |
-| `secret-scan` | Runs [betterleaks](https://github.com/betterleaks/betterleaks) on staged changes, the tree, history or a remote repo, always redacted. Sorts each finding into rotate, purge or allowlist. Validates live credentials only with consent. |
-| `security-audit` | Multi-phase security audit with machine-readable findings and validators that check coverage and evidence. Vendored from [cloudflare/security-audit-skill](https://github.com/cloudflare/security-audit-skill) (MIT). |
-| `unslop` | Turns AI-looking UI into a designed interface: finds the tells (purple gradients, glows, emoji labels), sets a direction, fixes it pass by pass. Vendored from [heydamir/unslop](https://github.com/heydamir/unslop) (CC BY 4.0, by Damir Sokolovsky). |
 
 ## Running in CI / AWS
 
