@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "An arsenal of slash commands and MCP servers for AI agents — written once, compiled to Claude Code, opencode, and Cursor.",
-    "version": "0.3.0"
+    "version": "0.4.0"
   },
   "plugins": [
     {
       "name": "panoply",
       "source": "./",
       "description": "An arsenal of slash commands and MCP servers for AI agents — written once, compiled to Claude Code, opencode, and Cursor.",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "category": "development"
     }
   ]

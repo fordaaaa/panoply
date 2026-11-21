@@ -5,6 +5,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-20
+
 ### Added
 
 - **`secret-scan` skill**: drives the betterleaks CLI over staged changes, the working tree, git history or a remote repo, always with `--redact`, and sorts each finding into rotate, purge or allowlist. `/commit` now blocks on betterleaks findings when the binary is installed.

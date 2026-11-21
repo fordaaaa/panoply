@@ -1,6 +1,6 @@
 {
   "name": "panoply",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "An arsenal of slash commands and MCP servers for AI agents — written once, compiled to Claude Code, opencode, and Cursor.",
   "type": "module",
   "license": "MIT",
