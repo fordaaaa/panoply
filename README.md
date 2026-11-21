@@ -49,7 +49,7 @@ Using something else? Open [`prompts/`](prompts/), copy a file, replace `{{ARGUM
 
 ## Skills
 
-Claude Code only (opencode/Cursor have no equivalent) — sourced from `skills/*/SKILL.md`, rendered to `.claude/skills/`.
+opencode and Cursor still have no skills; they are installed for Claude Code by `npx panoply init` and the plugin. Sourced from `skills/*/SKILL.md`, rendered to `.claude/skills/`.
 
 | Skill | What it does |
 |:--|:--|
