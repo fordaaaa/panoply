@@ -1,12 +1,10 @@
 {
   "name": "panoply",
   "version": "0.4.0",
-  "description": "An arsenal of slash commands and MCP servers for AI agents — written once, compiled to Claude Code, opencode, and Cursor.",
+  "private": true,
+  "description": "An agent toolkit: skills, MCP servers and agents, written once and compiled to Claude Code, opencode and Cursor.",
   "type": "module",
   "license": "MIT",
-  "bin": {
-    "panoply": "./bin/init.mjs"
-  },
   "scripts": {
     "build": "node build.mjs",
     "check": "node build.mjs --check",
@@ -14,44 +12,7 @@
     "test": "node --test tests/harness.test.mjs tests/init-skills.test.mjs",
     "harness": "node bin/harness.mjs --preview"
   },
-  "files": [
-    "bin",
-    "lib/harness",
-    "evals/deterministic",
-    "tests",
-    "commands",
-    "skills",
-    "prompts",
-    "mcp",
-    "servers",
-    "templates",
-    ".claude",
-    "!.claude/settings.local.json",
-    ".opencode",
-    ".cursor",
-    "build.mjs",
-    "README.md",
-    "LICENSE"
-  ],
-  "keywords": [
-    "claude-code",
-    "opencode",
-    "cursor",
-    "slash-commands",
-    "code-review",
-    "mcp",
-    "ai-agent"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/fordaaaa/panoply.git"
-  },
   "engines": {
     "node": ">=18"
-  },
-  "dependencies": {},
-  "homepage": "https://github.com/fordaaaa/panoply#readme",
-  "bugs": {
-    "url": "https://github.com/fordaaaa/panoply/issues"
   }
 }
