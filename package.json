@@ -11,7 +11,7 @@
     "build": "node build.mjs",
     "check": "node build.mjs --check",
     "lint": "node build.mjs --lint",
-    "test": "node --test tests/harness.test.mjs",
+    "test": "node --test tests/harness.test.mjs tests/init-skills.test.mjs",
     "harness": "node bin/harness.mjs --preview"
   },
   "files": [
