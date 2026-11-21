@@ -14,6 +14,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ### Changed
 
+- **`npx panoply init` now installs skills** into `~/.claude/skills/` (with `--global`) or `.claude/skills/`. It skips any skill folder you wrote yourself.
+- **The README leads with skills, MCP servers and agents.** The slash commands moved to a Legacy section; they still install and work.
 - **The default browser MCP is now `camoufox`** (`camoufox-mcp-server@2.6.0`, needs Node 22+). `playwright` is now opt-in: re-add it with `npx panoply init --with playwright` if you rely on `PANOPLY_BROWSER_CDP`.
 
 ### Fixed
