@@ -371,7 +371,7 @@ await checkGithubAuth();
 for (const tool of chosen) install(tool);
 
 console.log(
-  `\nDone. Reload your agent and the commands appear as /cr-run, /cr-fix, /map, /spec, /verify, /debug, /prompt` +
+  `\nDone. Reload your agent to pick up the skills (Claude Code), MCP servers and commands` +
   (isGlobal ? ` — in every project, without running this again.` : `.`) +
   `\nNothing is configured yet — the commands run in local mode (report only, no filing, no git) until you ask for more.` +
   (Object.keys(mcpFor(chosen[0])).length ? `\nSee docs/mcp-auth.md for authenticating the GitHub MCP server, or skip it and just use \`gh\`.` : ""),
