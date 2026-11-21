@@ -26,6 +26,7 @@
     "servers",
     "templates",
     ".claude",
+    "!.claude/settings.local.json",
     ".opencode",
     ".cursor",
     "build.mjs",
